@@ -1,30 +1,64 @@
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { STATE_COLORS, ORDER_STATE_LABELS } from "../constants/index";
 
 export const Badge = ({ state }) => {
   const key = state?.toUpperCase?.() || state;
-  const c = STATE_COLORS[state] || STATE_COLORS[key] || { bg: "#F3F4F6", text: "#374151", dot: "#9CA3AF" };
+  const c = STATE_COLORS[state] || STATE_COLORS[key] || { bg: "#F1F5F9", text: "#475569", dot: "#94A3B8" };
   const label = ORDER_STATE_LABELS[key] || ORDER_STATE_LABELS[state] || state;
   return (
-    <span style={{ background: c.bg, color: c.text, display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: c.dot, display: "inline-block" }} />
+    <span style={{
+      background: c.bg, color: c.text, display: "inline-flex", alignItems: "center", gap: 6,
+      padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "inherit",
+      border: "1px solid transparent", boxSizing: "border-box",
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, display: "inline-block", flexShrink: 0 }} />
       {label}
     </span>
   );
 };
 
 export const Modal = ({ open, onClose, title, children, width = 520 }) => {
+  const titleId = useId();
   if (!open) return null;
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,15,25,0.6)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: width,
-        boxShadow: "0 25px 80px rgba(0,0,0,0.25)", overflow: "hidden", animation: "slideUp 0.2s ease" }}>
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #F0F0F0",
-          display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0F0F19" }}>{title}</h3>
-          <button onClick={onClose} style={{ border: "none", background: "none", fontSize: 22, cursor: "pointer", color: "#666", lineHeight: 1 }}>×</button>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.5)", backdropFilter: "blur(6px)",
+        display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 24,
+        animation: "fadeIn 0.2s ease",
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: "#fff", borderRadius: 16, width: "100%", maxWidth: width,
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.2)", overflow: "hidden",
+          animation: "slideUp 0.25s cubic-bezier(0.21, 0.47, 0.32, 0.98)", border: "1px solid #E2E8F0",
+        }}
+      >
+        <div style={{
+          padding: "18px 24px", borderBottom: "1px solid #E2E8F0",
+          display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F8FAFC",
+        }}>
+          <h2 id={titleId} style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#0F172A" }}>{title}</h2>
+          <button
+            type="button"
+            aria-label="Cerrar"
+            onClick={onClose}
+            style={{
+              border: "none", background: "none", width: 32, height: 32, borderRadius: 8,
+              fontSize: 18, cursor: "pointer", color: "#64748B", display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "background 0.15s, color 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#E2E8F0"; e.currentTarget.style.color = "#0F172A"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#64748B"; }}
+          >
+            ×
+          </button>
         </div>
         <div style={{ padding: "20px 24px 24px", maxHeight: "75vh", overflowY: "auto" }}>{children}</div>
       </div>
@@ -36,29 +70,58 @@ export const Toast = ({ msg, onDone }) => {
   useEffect(() => { const t = setTimeout(onDone, 3200); return () => clearTimeout(t); }, [onDone]);
   const isErr = msg?.startsWith("❌");
   return (
-    <div style={{ position: "fixed", bottom: 28, right: 28, padding: "12px 20px",
+    <div role="status" aria-live="polite" style={{
+      position: "fixed", bottom: 24, right: 24, padding: "12px 18px",
       background: isErr ? "#FEE2E2" : "#D1FAE5", color: isErr ? "#991B1B" : "#065F46",
-      borderRadius: 12, fontWeight: 600, fontSize: 14, boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
-      zIndex: 2000, animation: "slideUp 0.25s ease", maxWidth: 340 }}>
+      borderRadius: 12, fontWeight: 600, fontSize: 14, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
+      zIndex: 2000, animation: "slideUp 0.25s ease", maxWidth: 360, border: isErr ? "1px solid #FECACA" : "1px solid #A7F3D0",
+    }}>
       {msg}
     </div>
   );
 };
 
-export const Input = ({ label, ...props }) => (
-  <div style={{ marginBottom: 16 }}>
-    {label && <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>}
-    <input {...props} style={{ width: "100%", border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "9px 12px",
-      fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit", transition: "border-color 0.15s", ...props.style }}
-      onFocus={e => (e.target.style.borderColor = "#6366F1")} onBlur={e => (e.target.style.borderColor = "#E5E7EB")} />
+const inputBase = {
+  width: "100%", border: "1px solid #E2E8F0", borderRadius: 10, padding: "10px 14px",
+  fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+  transition: "border-color 0.15s, box-shadow 0.15s", background: "#fff",
+};
+
+const labelStyle = { display: "block", fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 6, letterSpacing: "0.02em" };
+
+export const Input = ({ label, wrapperStyle, ...props }) => (
+  <div style={{ marginBottom: 16, ...wrapperStyle }}>
+    {label && (
+      <label style={labelStyle}>
+        {label}
+      </label>
+    )}
+    <input
+      {...props}
+      style={{ ...inputBase, ...props.style }}
+      onFocus={e => {
+        e.target.style.borderColor = "#6366F1";
+        e.target.style.boxShadow = "0 0 0 3px rgba(99, 102, 241, 0.15)";
+      }}
+      onBlur={e => {
+        e.target.style.borderColor = "#E2E8F0";
+        e.target.style.boxShadow = "none";
+      }}
+    />
   </div>
 );
 
-export const Select = ({ label, children, ...props }) => (
-  <div style={{ marginBottom: 16 }}>
-    {label && <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>}
-    <select {...props} style={{ width: "100%", border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "9px 12px",
-      fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "#fff", cursor: "pointer", ...props.style }}>
+export const Select = ({ label, children, wrapperStyle, ...props }) => (
+  <div style={{ marginBottom: 16, ...wrapperStyle }}>
+    {label && (
+      <label style={labelStyle}>
+        {label}
+      </label>
+    )}
+    <select
+      {...props}
+      style={{ ...inputBase, cursor: "pointer", appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", backgroundSize: 18, paddingRight: 40, ...props.style }}
+    >
       {children}
     </select>
   </div>
@@ -66,28 +129,51 @@ export const Select = ({ label, children, ...props }) => (
 
 export const Btn = ({ children, variant = "primary", size = "md", ...props }) => {
   const styles = {
-    primary:   { background: "#6366F1", color: "#fff",    border: "none" },
-    secondary: { background: "#F3F4F6", color: "#374151", border: "1.5px solid #E5E7EB" },
-    danger:    { background: "#FEE2E2", color: "#DC2626", border: "1.5px solid #FCA5A5" },
-    green:     { background: "#D1FAE5", color: "#065F46", border: "1.5px solid #6EE7B7" },
-    ghost:     { background: "transparent", color: "#6366F1", border: "1.5px solid #C7D2FE" },
+    primary:   { background: "#6366F1", color: "#fff", border: "none" },
+    secondary: { background: "#F1F5F9", color: "#475569", border: "1px solid #E2E8F0" },
+    danger:    { background: "#FEE2E2", color: "#DC2626", border: "1px solid #FECACA" },
+    green:     { background: "#D1FAE5", color: "#065F46", border: "1px solid #A7F3D0" },
+    ghost:     { background: "transparent", color: "#6366F1", border: "1px solid #C7D2FE" },
   };
-  const sizes = { sm: { padding: "5px 12px", fontSize: 12 }, md: { padding: "9px 18px", fontSize: 14 }, lg: { padding: "12px 24px", fontSize: 15 } };
+  const sizes = { sm: { padding: "6px 12px", fontSize: 12 }, md: { padding: "9px 16px", fontSize: 14 }, lg: { padding: "12px 20px", fontSize: 15 } };
+  const hover = {
+    primary:   { background: "#4F46E5" },
+    secondary: { background: "#E2E8F0" },
+    danger:    { background: "#FECACA" },
+    green:     { background: "#A7F3D0" },
+    ghost:     { background: "rgba(99, 102, 241, 0.08)" },
+  };
   return (
-    <button {...props} style={{ ...styles[variant], ...sizes[size], borderRadius: 8, cursor: "pointer", fontWeight: 600,
-      fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, transition: "all 0.15s",
-      opacity: props.disabled ? 0.5 : 1, ...props.style }}>
+    <button
+      {...props}
+      style={{
+        ...styles[variant], ...sizes[size], borderRadius: 10, cursor: props.disabled ? "not-allowed" : "pointer",
+        fontWeight: 600, fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+        transition: "all 0.15s", opacity: props.disabled ? 0.6 : 1, ...props.style,
+      }}
+      onMouseEnter={e => { if (!props.disabled && hover[variant]) e.currentTarget.style.background = hover[variant].background; }}
+      onMouseLeave={e => { if (!props.disabled && styles[variant]) e.currentTarget.style.background = styles[variant].background; }}
+    >
       {children}
     </button>
   );
 };
 
 export const SectionLabel = ({ children }) => (
-  <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{children}</div>
+  <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>{children}</div>
 );
 
 export const AlertBox = ({ type = "warning", children }) => {
-  const styles = { warning: { bg: "#FEF3C7", color: "#92400E" }, danger: { bg: "#FEE2E2", color: "#991B1B" }, info: { bg: "#DBEAFE", color: "#1E40AF" }, success: { bg: "#D1FAE5", color: "#065F46" } };
+  const styles = {
+    warning: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
+    danger:  { bg: "#FEF2F2", color: "#991B1B", border: "#FECACA" },
+    info:    { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
+    success: { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0" },
+  };
   const s = styles[type];
-  return <div style={{ background: s.bg, color: s.color, borderRadius: 10, padding: "10px 14px", fontSize: 13, marginBottom: 14 }}>{children}</div>;
+  return (
+    <div style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}`, borderRadius: 10, padding: "12px 14px", fontSize: 13, marginBottom: 16 }}>
+      {children}
+    </div>
+  );
 };

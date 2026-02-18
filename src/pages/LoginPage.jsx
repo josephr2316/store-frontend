@@ -14,7 +14,6 @@ export default function LoginPage({ onLogin }) {
     setError("");
     try {
       const data = await authApi.login(username, password);
-      // Common JWT response shapes: { token }, { accessToken }, { jwt }, or plain string
       const token =
         data?.token       ||
         data?.accessToken ||
@@ -33,23 +32,25 @@ export default function LoginPage({ onLogin }) {
   return (
     <div
       style={{
-        height: "100vh", display: "flex", alignItems: "center",
-        justifyContent: "center", background: "#0F0F19",
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        background: "linear-gradient(145deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)",
+        fontFamily: "'DM Sans', system-ui, sans-serif", padding: 24,
       }}
     >
       <div
         style={{
-          width: 380, background: "#1E1E2E", borderRadius: 20,
-          padding: "40px 36px", boxShadow: "0 40px 100px rgba(0,0,0,0.5)",
+          width: "100%", maxWidth: 400, background: "rgba(255,255,255,0.03)",
+          borderRadius: 20, padding: "40px 36px",
+          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06)",
+          backdropFilter: "blur(12px)",
+          animation: "fadeInUp 0.4s cubic-bezier(0.21, 0.47, 0.32, 0.98) forwards",
         }}
       >
-        {/* Brand */}
         <div style={{ marginBottom: 32, textAlign: "center" }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>
             Tienda
           </div>
-          <div style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
+          <div style={{ color: "#94A3B8", fontSize: 13, marginTop: 4 }}>
             Sistema de Gestión
           </div>
         </div>
@@ -57,9 +58,9 @@ export default function LoginPage({ onLogin }) {
         {error && (
           <div
             style={{
-              background: "#FEE2E2", color: "#991B1B",
-              borderRadius: 10, padding: "10px 14px",
-              fontSize: 13, marginBottom: 20, fontWeight: 500,
+              background: "rgba(254, 226, 226, 0.15)", color: "#FCA5A5",
+              borderRadius: 12, padding: "12px 14px", fontSize: 13, marginBottom: 20,
+              border: "1px solid rgba(248, 113, 113, 0.3)",
             }}
           >
             ❌ {error}
@@ -67,42 +68,56 @@ export default function LoginPage({ onLogin }) {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#9CA3AF", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#94A3B8", marginBottom: 8 }}>
               Usuario
             </label>
             <input
-              type="text" value={username}
+              type="text"
+              value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="admin"
+              placeholder="Nombre de usuario"
               autoFocus
               style={{
-                width: "100%", background: "#0F0F19", border: "1.5px solid #374151",
-                borderRadius: 8, padding: "10px 14px", fontSize: 14,
-                color: "#fff", fontFamily: "inherit", boxSizing: "border-box",
-                outline: "none", transition: "border-color 0.15s",
+                width: "100%", background: "rgba(15, 23, 42, 0.6)", border: "1px solid #334155",
+                borderRadius: 12, padding: "12px 14px", fontSize: 14, color: "#F8FAFC",
+                fontFamily: "inherit", boxSizing: "border-box", outline: "none",
+                transition: "border-color 0.2s, box-shadow 0.2s",
               }}
-              onFocus={e  => (e.target.style.borderColor = "#6366F1")}
-              onBlur={e   => (e.target.style.borderColor = "#374151")}
+              onFocus={e => {
+                e.target.style.borderColor = "#6366F1";
+                e.target.style.boxShadow = "0 0 0 3px rgba(99, 102, 241, 0.2)";
+              }}
+              onBlur={e => {
+                e.target.style.borderColor = "#334155";
+                e.target.style.boxShadow = "none";
+              }}
             />
           </div>
 
           <div style={{ marginBottom: 28 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#9CA3AF", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#94A3B8", marginBottom: 8 }}>
               Contraseña
             </label>
             <input
-              type="password" value={password}
+              type="password"
+              value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               style={{
-                width: "100%", background: "#0F0F19", border: "1.5px solid #374151",
-                borderRadius: 8, padding: "10px 14px", fontSize: 14,
-                color: "#fff", fontFamily: "inherit", boxSizing: "border-box",
-                outline: "none", transition: "border-color 0.15s",
+                width: "100%", background: "rgba(15, 23, 42, 0.6)", border: "1px solid #334155",
+                borderRadius: 12, padding: "12px 14px", fontSize: 14, color: "#F8FAFC",
+                fontFamily: "inherit", boxSizing: "border-box", outline: "none",
+                transition: "border-color 0.2s, box-shadow 0.2s",
               }}
-              onFocus={e  => (e.target.style.borderColor = "#6366F1")}
-              onBlur={e   => (e.target.style.borderColor = "#374151")}
+              onFocus={e => {
+                e.target.style.borderColor = "#6366F1";
+                e.target.style.boxShadow = "0 0 0 3px rgba(99, 102, 241, 0.2)";
+              }}
+              onBlur={e => {
+                e.target.style.borderColor = "#334155";
+                e.target.style.boxShadow = "none";
+              }}
             />
           </div>
 
@@ -110,19 +125,19 @@ export default function LoginPage({ onLogin }) {
             type="submit"
             disabled={loading}
             style={{
-              width: "100%", background: "#6366F1", color: "#fff",
-              border: "none", borderRadius: 10, padding: "12px",
-              fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
-              fontFamily: "inherit", opacity: loading ? 0.7 : 1,
-              transition: "opacity 0.15s",
+              width: "100%", background: loading ? "#4F46E5" : "#6366F1", color: "#fff",
+              border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 600,
+              cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit",
+              opacity: loading ? 0.85 : 1, transition: "background 0.2s, opacity 0.2s",
+              boxShadow: "0 4px 14px rgba(99, 102, 241, 0.35)",
             }}
           >
-            {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+            {loading ? "Iniciando sesión…" : "Iniciar sesión"}
           </button>
         </form>
 
-        <div style={{ marginTop: 20, textAlign: "center", fontSize: 12, color: "#4B5563" }}>
-          store-production-3316.up.railway.app
+        <div style={{ marginTop: 24, textAlign: "center", fontSize: 11, color: "#64748B" }}>
+          Conectado al servidor
         </div>
       </div>
     </div>

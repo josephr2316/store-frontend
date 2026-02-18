@@ -32,14 +32,14 @@ export const STATE_COLORS = {
   CONFIRMED: { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
   PREPARING: { bg: "#DBEAFE", text: "#1E40AF", dot: "#3B82F6" },
   SHIPPED:   { bg: "#EDE9FE", text: "#5B21B6", dot: "#8B5CF6" },
-  DELIVERED: { bg: "#D1FAE5", text: "#064E3B", dot: "#059669" },
+  DELIVERED: { bg: "#CCFBF1", text: "#0F766E", dot: "#14B8A6" },
   CANCELLED: { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444" },
   // lowercase fallbacks in case API returns lowercase
   Pendiente:  { bg: "#FEF3C7", text: "#92400E", dot: "#F59E0B" },
   Confirmado: { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
   Preparando: { bg: "#DBEAFE", text: "#1E40AF", dot: "#3B82F6" },
   Enviado:    { bg: "#EDE9FE", text: "#5B21B6", dot: "#8B5CF6" },
-  Entregado:  { bg: "#D1FAE5", text: "#064E3B", dot: "#059669" },
+  Entregado:  { bg: "#CCFBF1", text: "#0F766E", dot: "#14B8A6" },
   Cancelado:  { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444" },
 };
 

@@ -8,29 +8,50 @@ const TABS = [
 
 export default function Sidebar({ activeTab, onTabChange, pendingCount, onLogout }) {
   return (
-    <nav style={{ width: 220, background: "#0F0F19", flexShrink: 0, display: "flex", flexDirection: "column", padding: "24px 16px", gap: 4 }}>
-      <div style={{ marginBottom: 28, paddingLeft: 8 }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>Tienda</div>
-        <div style={{ fontSize: 11, color: "#6B7280", marginTop: 2 }}>Sistema de Gestión</div>
+    <nav style={{
+      width: 240, background: "#0F172A", flexShrink: 0, display: "flex", flexDirection: "column",
+      padding: "20px 12px", gap: 2, borderRight: "1px solid rgba(255,255,255,0.06)",
+    }}>
+      <div style={{ marginBottom: 24, paddingLeft: 10 }}>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.2 }}>Tienda</div>
+        <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>Sistema de Gestión</div>
       </div>
 
       {TABS.map(t => {
         const active = activeTab === t.id;
         return (
-          <button key={t.id} onClick={() => onTabChange(t.id)} style={{
-            display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10,
-            border: "none", cursor: "pointer", width: "100%", textAlign: "left",
-            background: active ? "#1E1E2E" : "transparent",
-            color: active ? "#A5B4FC" : "#6B7280",
-            fontFamily: "inherit", fontSize: 14, fontWeight: active ? 700 : 500,
-            transition: "all 0.15s",
-            borderLeft: active ? "2px solid #6366F1" : "2px solid transparent",
-          }}>
-            <span style={{ fontSize: 16 }}>{t.icon}</span>
+          <button
+            key={t.id}
+            type="button"
+            aria-current={active ? "page" : undefined}
+            onClick={() => onTabChange(t.id)}
+            style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 10,
+              border: "none", cursor: "pointer", width: "100%", textAlign: "left",
+              background: active ? "rgba(99, 102, 241, 0.14)" : "transparent",
+              color: active ? "#C7D2FE" : "#94A3B8",
+              fontFamily: "inherit", fontSize: 14, fontWeight: active ? 600 : 500,
+              transition: "background 0.15s ease, color 0.15s ease, border-color 0.15s ease",
+              borderLeft: active ? "3px solid #6366F1" : "3px solid transparent",
+            }}
+            onMouseEnter={e => {
+              if (active) return;
+              e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+              e.currentTarget.style.color = "#E2E8F0";
+            }}
+            onMouseLeave={e => {
+              if (active) return;
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = "#94A3B8";
+            }}
+          >
+            <span style={{ fontSize: 18, opacity: active ? 1 : 0.9 }}>{t.icon}</span>
             {t.label}
             {t.id === "Pedidos" && pendingCount > 0 && (
-              <span style={{ marginLeft: "auto", background: "#6366F1", color: "#fff", borderRadius: 10,
-                fontSize: 11, fontWeight: 700, padding: "1px 7px", minWidth: 20, textAlign: "center" }}>
+              <span style={{
+                marginLeft: "auto", background: "#6366F1", color: "#fff", borderRadius: 8,
+                fontSize: 11, fontWeight: 700, padding: "2px 8px", minWidth: 22, textAlign: "center",
+              }}>
                 {pendingCount}
               </span>
             )}
@@ -38,19 +59,37 @@ export default function Sidebar({ activeTab, onTabChange, pendingCount, onLogout
         );
       })}
 
-      <div style={{ marginTop: "auto", padding: "16px 8px 0", borderTop: "1px solid #1E1E2E" }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "#4B5563", textTransform: "uppercase", marginBottom: 10 }}>
-          Estados de Pedido
+      <div style={{ marginTop: "auto", padding: "18px 10px 0", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+          Estados de pedido
         </div>
-        {ORDER_STATES.map(s => (
-          <div key={s} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: STATE_COLORS[s]?.dot, flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: "#6B7280" }}>{ORDER_STATE_LABELS[s]}</span>
-          </div>
-        ))}
-        <button onClick={onLogout} style={{ marginTop: 14, width: "100%", background: "transparent",
-          border: "1px solid #374151", borderRadius: 8, padding: "7px", fontSize: 12, color: "#6B7280",
-          cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {ORDER_STATES.map(s => (
+            <div key={s} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 8px", borderRadius: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: STATE_COLORS[s]?.dot ?? "#64748B", flexShrink: 0 }} />
+              <span style={{ fontSize: 13, color: "#E2E8F0", fontWeight: 500 }}>{ORDER_STATE_LABELS[s]}</span>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={onLogout}
+          style={{
+            marginTop: 16, width: "100%", background: "transparent",
+            border: "1px solid #334155", borderRadius: 10, padding: "10px 12px", fontSize: 13, color: "#94A3B8",
+            cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+            transition: "background 0.15s, color 0.15s, border-color 0.15s",
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+            e.currentTarget.style.color = "#E2E8F0";
+            e.currentTarget.style.borderColor = "#475569";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "#94A3B8";
+            e.currentTarget.style.borderColor = "#334155";
+          }}
+        >
           Cerrar sesión
         </button>
       </div>

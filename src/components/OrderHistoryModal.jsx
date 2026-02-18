@@ -19,18 +19,21 @@ export default function OrderHistoryModal({ orderId, onClose }) {
   return (
     <Modal open={!!orderId} onClose={onClose} title="Historial del Pedido" width={480}>
       {loading ? (
-        <div style={{ textAlign: "center", padding: 30, color: "#9CA3AF" }}>Cargando...</div>
+        <div style={{ textAlign: "center", padding: 30, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <span style={{ width: 28, height: 28, border: "2px solid #E2E8F0", borderTopColor: "#6366F1", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+          <span style={{ color: "#9CA3AF", fontSize: 14 }}>Cargando...</span>
+        </div>
       ) : history.length === 0 ? (
         <div style={{ textAlign: "center", padding: 30, color: "#9CA3AF" }}>Sin historial</div>
       ) : (
-        <div>
+        <div style={{ animation: "contentIn 0.25s ease-out 0.05s forwards", opacity: 0 }}>
           {history.map((h, i) => {
             const action = h.action || h.status || h.transition || h.event || h.type || "—";
             const date   = h.date   || h.createdAt || h.timestamp || h.at   || "";
             const note   = h.note   || h.comment   || h.description          || "";
             const by     = h.by     || h.user       || h.createdBy            || "Sistema";
             return (
-              <div key={i} style={{ display: "flex", gap: 12, marginBottom: i < history.length - 1 ? 16 : 0 }}>
+              <div key={i} style={{ display: "flex", gap: 12, marginBottom: i < history.length - 1 ? 16 : 0, animation: "listItemIn 0.22s ease-out forwards", animationDelay: `${i * 50}ms`, opacity: 0 }}>
                 <div
                   style={{
                     width: 8, height: 8, borderRadius: "50%",

@@ -21,6 +21,7 @@ export function useStore() {
   // ── Products ─────────────────────────────────────────────────────────────────
 
   const fetchProducts = useCallback(async () => {
+    setError(null);
     startLoad("products");
     try {
       const data = await productsApi.list();
@@ -31,6 +32,7 @@ export function useStore() {
         })
       );
       setProducts(withVariants);
+      setError(null);
     } catch (e) {
       const msg = e?.message === "Failed to fetch"
         ? "No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde."
@@ -75,10 +77,12 @@ export function useStore() {
   // ── Inventory ─────────────────────────────────────────────────────────────────
 
   const fetchBalances = useCallback(async () => {
+    setError(null);
     startLoad("inventory");
     try {
       const data = await inventoryApi.balances();
       setBalances(data || []);
+      setError(null);
     } catch (e) {
       const msg = e?.message === "Failed to fetch"
         ? "No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde."
@@ -113,10 +117,12 @@ export function useStore() {
   // ── Orders ─────────────────────────────────────────────────────────────────────
 
   const fetchOrders = useCallback(async (status) => {
+    setError(null);
     startLoad("orders");
     try {
       const data = await ordersApi.list(status);
       setOrders(data || []);
+      setError(null);
     } catch (e) {
       const msg = e?.message === "Failed to fetch"
         ? "No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde."

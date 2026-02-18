@@ -24,12 +24,12 @@ export default function WhatsAppModal({ orderId, onClose, toast }) {
   return (
     <Modal open={!!orderId} onClose={onClose} title="Plantilla WhatsApp" width={540}>
       {loading ? (
-        <div style={{ textAlign: "center", padding: 40, color: "#9CA3AF" }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>⏳</div>
-          Cargando plantilla...
+        <div style={{ textAlign: "center", padding: 40, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <span style={{ width: 28, height: 28, border: "2px solid #E2E8F0", borderTopColor: "#6366F1", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+          <span style={{ color: "#9CA3AF", fontSize: 14 }}>Cargando plantilla...</span>
         </div>
       ) : message ? (
-        <>
+        <div style={{ animation: "contentIn 0.28s ease-out 0.06s forwards", opacity: 0 }}>
           <div style={{
             background: "#E7F8E7", borderRadius: 12, padding: 16,
             fontSize: 13.5, lineHeight: 1.7, whiteSpace: "pre-wrap",
@@ -43,7 +43,7 @@ export default function WhatsAppModal({ orderId, onClose, toast }) {
             </Btn>
             {waLink && <Btn variant="green" onClick={() => window.open(waLink, "_blank")}>📱 Abrir WhatsApp</Btn>}
           </div>
-        </>
+        </div>
       ) : (
         <div style={{ textAlign: "center", padding: 30, color: "#9CA3AF" }}>
           No se pudo cargar la plantilla

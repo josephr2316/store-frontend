@@ -54,32 +54,47 @@ const TRANSITION_LABELS = {
 function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, loading }) {
   const FILTERS = ["ALL","PENDING","CONFIRMED","PREPARING","SHIPPED","DELIVERED","CANCELLED"];
   return (
-    <div style={{ width: 340, borderRight: "1px solid #F0F0F0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
-      <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #F0F0F0" }}>
+    <div style={{ width: 360, minWidth: 320, background: "#fff", borderRight: "1px solid #E2E8F0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+      <div style={{ padding: "16px 16px 14px", borderBottom: "1px solid #E2E8F0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ fontWeight: 700, fontSize: 16 }}>Pedidos</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: "#0F172A" }}>Pedidos</span>
           <Btn size="sm" onClick={onNew}>+ Nuevo</Btn>
         </div>
         <select value={filter} onChange={e => onFilterChange(e.target.value)}
-          style={{ width: "100%", border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "7px 10px", fontSize: 13, fontFamily: "inherit" }}>
+          style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 10, padding: "8px 12px", fontSize: 13, fontFamily: "inherit", background: "#F8FAFC" }}>
           {FILTERS.map(f => <option key={f} value={f}>{f === "ALL" ? "Todos" : f}</option>)}
         </select>
       </div>
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {loading && <div style={{ padding: 20, textAlign: "center", color: "#9CA3AF", fontSize: 13 }}>Cargando pedidos...</div>}
-        {!loading && orders.length === 0 && (
-          <div style={{ padding: 30, textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Sin pedidos</div>
+        {loading && (
+          <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <span style={{ width: 28, height: 28, border: "2px solid #E2E8F0", borderTopColor: "#6366F1", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+            <span style={{ color: "#64748B", fontSize: 13 }}>Cargando pedidos…</span>
+          </div>
         )}
-        {orders.map(o => {
+        {!loading && orders.length === 0 && (
+          <div style={{ padding: 32, textAlign: "center", color: "#94A3B8", fontSize: 14 }}>Sin pedidos</div>
+        )}
+        {orders.map((o, index) => {
           const norm = normaliseOrder(o);
           const isActive = selected === o.id;
           const missingAddr = !norm.clientAddress && norm.state !== "CANCELLED";
           return (
-            <div key={o.id} onClick={() => onSelect(o.id)}
-              style={{ padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid #F8F8F8",
-                background: isActive ? "#F5F3FF" : "#fff",
+            <div
+              key={o.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelect(o.id)}
+              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(o.id); } }}
+              style={{
+                padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid #F1F5F9",
+                background: isActive ? "#EEF2FF" : "#fff",
                 borderLeft: isActive ? "3px solid #6366F1" : "3px solid transparent",
-                transition: "background 0.1s" }}>
+                transition: "background 0.15s ease",
+                animation: "listItemIn 0.2s ease-out forwards",
+                animationDelay: `${Math.min(index * 30, 180)}ms`,
+              }}
+            >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#0F0F19" }}>{o.id}</div>
@@ -91,11 +106,11 @@ function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, 
                 </div>
               </div>
               {missingAddr && (
-                <div style={{ marginTop: 6, fontSize: 11, color: "#DC2626", background: "#FEE2E2", borderRadius: 6, padding: "2px 7px", display: "inline-block" }}>
+                <div style={{ marginTop: 6, fontSize: 11, color: "#B91C1C", background: "#FEE2E2", borderRadius: 6, padding: "3px 8px", display: "inline-block" }}>
                   ⚠️ Sin dirección
                 </div>
               )}
-              <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4 }}>{norm.channel} · {norm.createdAt?.slice(0,10) || ""}</div>
+              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>{norm.channel} · {norm.createdAt?.slice(0,10) || ""}</div>
             </div>
           );
         })}
@@ -107,6 +122,7 @@ function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, 
 // ─── ORDER DETAIL ─────────────────────────────────────────────────────────────
 
 function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHistory, loading }) {
+  if (!order) return null;
   const norm = normaliseOrder(order);
   const [noteInput,    setNoteInput]    = useState("");
   const [editingAddr,  setEditingAddr]  = useState(false);
@@ -134,10 +150,10 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
   };
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: 28 }}>
+    <div style={{ flex: 1, overflowY: "auto", padding: 24, background: "#F8FAFC", animation: "contentIn 0.3s ease-out forwards", opacity: 0 }}>
       {/* Title */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#0F0F19" }}>{order.id}</h2>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0F172A" }}>{order.id}</h2>
         <Badge state={norm.state} />
         <span style={{ fontSize: 13, color: "#9CA3AF", marginLeft: "auto" }}>Canal: {norm.channel}</span>
         <Btn size="sm" variant="ghost" onClick={() => onHistory(order.id)}>📋 Historial</Btn>
@@ -146,8 +162,8 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
 
       {/* Transitions */}
       {nextStates.length > 0 && (
-        <div style={{ marginBottom: 20, background: "#F9FAFB", borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 10, textTransform: "uppercase" }}>Cambiar estado</div>
+        <div style={{ marginBottom: 20, background: "#fff", borderRadius: 12, padding: 16, border: "1px solid #E2E8F0", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Cambiar estado</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {nextStates.map(s => (
               <Btn key={s} size="sm"
@@ -162,8 +178,8 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
 
       {/* Client + Summary */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-        <div style={{ background: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", marginBottom: 8 }}>Cliente</div>
+        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 18, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Cliente</div>
           <div style={{ fontWeight: 700, fontSize: 15 }}>{norm.clientName}</div>
           <div style={{ color: "#6B7280", fontSize: 13 }}>📱 {norm.clientPhone}</div>
           {editingAddr ? (
@@ -187,8 +203,8 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
             </div>
           )}
         </div>
-        <div style={{ background: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", marginBottom: 8 }}>Resumen</div>
+        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 18, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Resumen</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: "#6366F1" }}>{fmtCurrency(norm.total)}</div>
           <div style={{ fontSize: 13, color: "#6B7280", marginTop: 4 }}>{norm.items.length} artículo(s)</div>
           <div style={{ fontSize: 13, color: "#6B7280" }}>Creado: {norm.createdAt?.slice(0,10) || "—"}</div>
@@ -196,11 +212,11 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
       </div>
 
       {/* Items table */}
-      <div style={{ background: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 12, marginBottom: 20, overflow: "hidden" }}>
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid #F0F0F0", fontWeight: 700, fontSize: 14 }}>Artículos</div>
+      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, marginBottom: 20, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+        <div style={{ padding: "14px 18px", borderBottom: "1px solid #E2E8F0", fontWeight: 600, fontSize: 13, color: "#475569", background: "#F8FAFC" }}>Artículos</div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#F9FAFB" }}>
+            <tr style={{ background: "#F8FAFC" }}>
               {["Producto","Variante","Cant.","Precio","Subtotal"].map(h => (
                 <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6B7280" }}>{h}</th>
               ))}
@@ -216,7 +232,7 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
                 <td style={{ padding: "10px 16px", fontSize: 14, fontWeight: 700 }}>{fmtCurrency(item.price * item.quantity)}</td>
               </tr>
             ))}
-            <tr style={{ borderTop: "2px solid #E5E7EB", background: "#F9FAFB" }}>
+            <tr style={{ borderTop: "2px solid #E2E8F0", background: "#F8FAFC" }}>
               <td colSpan={4} style={{ padding: "10px 16px", fontWeight: 700, textAlign: "right" }}>Total</td>
               <td style={{ padding: "10px 16px", fontWeight: 800, color: "#6366F1", fontSize: 16 }}>{fmtCurrency(norm.total)}</td>
             </tr>
@@ -305,8 +321,8 @@ export default function PedidosPage({ store, toast }) {
           loading={loading.orders}
         />
       ) : (
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#9CA3AF", fontSize: 15 }}>
-          Selecciona un pedido para ver el detalle
+        <div style={{ flex: 1, minWidth: 280, display: "flex", alignItems: "center", justifyContent: "center", background: "#F8FAFC", color: "#94A3B8", fontSize: 15 }}>
+          Selecciona un pedido de la lista para ver el detalle
         </div>
       )}
 

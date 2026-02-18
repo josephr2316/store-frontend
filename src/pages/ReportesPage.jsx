@@ -4,20 +4,20 @@ import { fmtCurrency } from "../utils/index";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, sub, color }) {
+function StatCard({ label, value, sub, color, delay = 0 }) {
   return (
-    <div style={{ background: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 14, padding: "20px 20px 16px" }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 800, color }}>{value}</div>
-      <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>{sub}</div>
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "16px 18px", minWidth: 0, boxShadow: "0 1px 2px rgba(0,0,0,0.04)", animation: "cardIn 0.35s ease-out forwards", animationDelay: `${delay}ms`, opacity: 0 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 800, color, lineHeight: 1.2 }}>{value}</div>
+      <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>{sub}</div>
     </div>
   );
 }
 
 // ─── WEEKLY SALES CHART ───────────────────────────────────────────────────────
 
-function WeeklyChart({ data }) {
-  // data may be: [{ date, total }] or { [date]: total } or [{ day, sales }]
+function WeeklyChart({ data, loading }) {
+  // data may be: [{ date, total }] or { [date]: total } or [{ day, sales }] or { totalAmount, weekStart }
   const normalised = (() => {
     if (!data) return [];
     if (Array.isArray(data)) {
@@ -32,10 +32,15 @@ function WeeklyChart({ data }) {
   const max = Math.max(...normalised.map(d => d[1]), 1);
 
   return (
-    <div style={{ background: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 14, padding: 20 }}>
-      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 16 }}>Ventas Semanales</div>
-      {normalised.length === 0 ? (
-        <div style={{ color: "#C4C4C4", textAlign: "center", padding: 40 }}>Sin datos</div>
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 20, minHeight: 220, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, color: "#0F172A" }}>Ventas Semanales</div>
+      {loading ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40, gap: 8, color: "#64748B", fontSize: 14 }}>
+          <span style={{ width: 20, height: 20, border: "2px solid #E5E7EB", borderTopColor: "#6366F1", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          Cargando...
+        </div>
+      ) : normalised.length === 0 ? (
+        <div style={{ color: "#9CA3AF", textAlign: "center", padding: 40, fontSize: 14 }}>Sin datos para esta semana</div>
       ) : (
         <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 180 }}>
           {normalised.map(([date, val], i) => {
@@ -45,7 +50,7 @@ function WeeklyChart({ data }) {
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#6366F1" }}>
                   {fmtCurrency(val).replace("RD$", "")}
                 </div>
-                <div style={{ width: "100%", background: "#6366F1", borderRadius: "6px 6px 0 0", height: h, transition: "height 0.3s", minHeight: 6 }} />
+                <div style={{ width: "100%", background: "#6366F1", borderRadius: "6px 6px 0 0", height: h, minHeight: 6, animation: "barGrow 0.5s ease-out forwards", animationDelay: `${i * 80}ms`, transformOrigin: "bottom" }} />
                 <div style={{ fontSize: 10, color: "#9CA3AF", textAlign: "center" }}>
                   {String(date).slice(-5)}
                 </div>
@@ -60,26 +65,31 @@ function WeeklyChart({ data }) {
 
 // ─── TOP PRODUCTS ─────────────────────────────────────────────────────────────
 
-function TopProducts({ data }) {
-  // data may be: [{ productName, quantity }] or [{ name, sold }] or [[name, qty]]
+function TopProducts({ data, loading }) {
+  // data may be: [{ variantSku, quantitySold }] or [{ productName, quantity }] or [{ name, sold }]
   const normalised = (() => {
     if (!data || !data.length) return [];
-    if (Array.isArray(data[0])) return data; // already [name, qty]
+    if (Array.isArray(data[0]) && typeof data[0][0] !== "object") return data; // already [name, qty]
     return data.map(d => [
-      d.productName || d.name || d.product || "—",
-      d.quantity    || d.sold || d.count   || 0,
+      d.variantSku ?? d.productName ?? d.name ?? d.product ?? "—",
+      d.quantitySold ?? d.quantity ?? d.sold ?? d.count ?? 0,
     ]);
   })().slice(0, 5);
 
   const maxQty = normalised[0]?.[1] || 1;
 
   return (
-    <div style={{ background: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 14, padding: 20 }}>
-      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Top Productos</div>
-      {normalised.length === 0 ? (
-        <div style={{ color: "#C4C4C4", fontSize: 13 }}>Sin datos</div>
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 20, minHeight: 180, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#0F172A" }}>Top Productos</div>
+      {loading ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 24, gap: 8, color: "#64748B", fontSize: 13 }}>
+          <span style={{ width: 16, height: 16, border: "2px solid #E5E7EB", borderTopColor: "#6366F1", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          Cargando...
+        </div>
+      ) : normalised.length === 0 ? (
+        <div style={{ color: "#9CA3AF", fontSize: 13 }}>Sin datos</div>
       ) : normalised.map(([name, qty], i) => (
-        <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, animation: "listItemIn 0.25s ease-out forwards", animationDelay: `${i * 60}ms`, opacity: 0 }}>
           <span style={{ width: 22, height: 22, borderRadius: "50%",
             background: i === 0 ? "#6366F1" : i === 1 ? "#8B5CF6" : "#A78BFA",
             display: "flex", alignItems: "center", justifyContent: "center",
@@ -106,10 +116,11 @@ export default function ReportesPage({ store }) {
   const [weeklySales, setWeeklySales] = useState(null);
   const [topProducts, setTopProducts] = useState(null);
   const [weekInput,   setWeekInput]   = useState(new Date().toISOString().slice(0, 10));
-  const [loadingRep,  setLoadingRep]  = useState(false);
+  const [loadingRep,  setLoadingRep]  = useState(true);
 
   const fetchReports = async (week) => {
     setLoadingRep(true);
+    store.setError(null);
     try {
       const [sales, tops] = await Promise.all([
         reportsApi.weeklySales(week),
@@ -118,7 +129,10 @@ export default function ReportesPage({ store }) {
       setWeeklySales(sales);
       setTopProducts(tops);
     } catch (e) {
-      console.error("Reports error:", e);
+      const msg = e?.message === "Failed to fetch"
+        ? "No se pudo conectar con el servidor."
+        : (e?.message || "Error al cargar reportes.");
+      store.setError(msg);
     } finally {
       setLoadingRep(false);
     }
@@ -131,6 +145,7 @@ export default function ReportesPage({ store }) {
   const weekRevenue   = (() => {
     if (!weeklySales) return 0;
     if (typeof weeklySales === "number") return weeklySales;
+    if (weeklySales?.totalAmount != null) return Number(weeklySales.totalAmount);
     if (Array.isArray(weeklySales)) return weeklySales.reduce((s, d) => s + (d.total ?? d.sales ?? d.amount ?? (Array.isArray(d) ? d[1] : 0)), 0);
     if (typeof weeklySales === "object") return Object.values(weeklySales).reduce((s, v) => s + (Number(v) || 0), 0);
     return 0;
@@ -150,33 +165,33 @@ export default function ReportesPage({ store }) {
   ];
 
   return (
-    <div style={{ padding: 28, overflowY: "auto", height: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Reportes</h2>
+    <div style={{ padding: "24px 28px", overflowY: "auto", height: "100%", maxWidth: 1400, margin: "0 auto" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0F0F19" }}>Reportes</h2>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
           <label style={{ fontSize: 12, fontWeight: 600, color: "#6B7280" }}>Semana:</label>
           <input type="date" value={weekInput} onChange={e => setWeekInput(e.target.value)}
             style={{ border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "6px 10px", fontSize: 13, fontFamily: "inherit" }} />
           <button onClick={() => fetchReports(weekInput)} disabled={loadingRep}
-            style={{ background: "#6366F1", color: "#fff", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-            {loadingRep ? "..." : "Actualizar"}
+            style={{ background: "#6366F1", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600, cursor: loadingRep ? "wait" : "pointer", fontFamily: "inherit", minWidth: 90 }}>
+            {loadingRep ? "Cargando…" : "Actualizar"}
           </button>
         </div>
       </div>
 
       {/* Stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
-        {statCards.map(c => <StatCard key={c.label} {...c} />)}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14, marginBottom: 24 }}>
+        {statCards.map((c, i) => <StatCard key={c.label} {...c} delay={i * 60} />)}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24 }}>
-        <WeeklyChart data={weeklySales} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24, alignItems: "start" }}>
+        <WeeklyChart data={weeklySales} loading={loadingRep} />
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <TopProducts data={topProducts} />
+          <TopProducts data={topProducts} loading={loadingRep} />
 
           {/* Low stock */}
-          <div style={{ background: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 14, padding: 20 }}>
-            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>⚠️ Stock Bajo</div>
+          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 20, boxShadow: "0 1px 2px rgba(0,0,0,0.04)", animation: "cardIn 0.35s ease-out 0.2s forwards", opacity: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#0F172A" }}>⚠️ Stock Bajo</div>
             {balances.filter(b => {
               const stock    = b.stock    ?? b.quantity    ?? 0;
               const reserved = b.reserved ?? b.reservedQty ?? 0;

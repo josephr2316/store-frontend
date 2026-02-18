@@ -1,8 +1,9 @@
 // ─── API CLIENT ───────────────────────────────────────────────────────────────
 // Central HTTP layer. All calls go through here.
 // Automatically attaches JWT Bearer token and handles 401 logout.
+// Para desarrollo local: crea .env con VITE_API_URL=http://localhost:8080
 
-const BASE_URL = "https://store-production-3316.up.railway.app";
+const BASE_URL = import.meta.env.VITE_API_URL || "https://store-production-3316.up.railway.app";
 
 // Token storage (in-memory + sessionStorage for page refresh survival)
 let _token = sessionStorage.getItem("jwt_token") || null;
@@ -186,7 +187,7 @@ export const reportsApi = {
    * week = ISO date of any day in the desired week
    */
   weeklySales: (week) =>
-    apiFetch(`/reports/weekly-sales${week ? `?week=${week}` : ""}`),
+    apiFetch(`/reports/weekly-sales${week ? `?week=${encodeURIComponent(week)}` : ""}`),
 
   /** GET /reports/top-products */
   topProducts: () => apiFetch("/reports/top-products"),
