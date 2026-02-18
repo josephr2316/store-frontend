@@ -139,12 +139,12 @@ export function useStore() {
   }, [fetchOrders]);
 
   const transitionOrder = useCallback(async (orderId, newStatus, note) => {
-    await ordersApi.transition(orderId, { status: newStatus, note: note || "" });
+    await ordersApi.transition(orderId, { toStatus: newStatus, reason: note || "" });
     await fetchOrders();
   }, [fetchOrders]);
 
   const updateOrderAddress = useCallback(async (orderId, address) => {
-    await ordersApi.updateAddress(orderId, { address });
+    await ordersApi.updateAddress(orderId, { shippingAddress: address });
     await fetchOrders();
   }, [fetchOrders]);
 

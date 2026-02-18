@@ -11,14 +11,20 @@ import { fmtCurrency } from "../utils/index";
 
 function normaliseOrder(o) {
   if (!o) return o;
+  // Build address from API fields (backend: shippingAddress, shippingCity, shippingRegion)
+  const addressParts = [o.shippingAddress, o.shippingCity, o.shippingRegion].filter(Boolean);
+  const clientAddress = o.clientAddress || o.client?.address || o.address
+    || (addressParts.length ? addressParts.join(", ") : null)
+    || o.shippingAddress
+    || "";
   return {
     ...o,
     // status field variations
     state:     o.state    || o.status    || "PENDING",
     // nested client or flat fields
     clientName:    o.clientName    || o.client?.name    || o.customerName || "—",
-    clientPhone:   o.clientPhone   || o.client?.phone   || o.phone        || "",
-    clientAddress: o.clientAddress || o.client?.address || o.address      || "",
+    clientPhone:   o.clientPhone   || o.client?.phone   || o.phone        || (o.customerPhone ?? ""),
+    clientAddress,
     // channel
     channel: o.channel || o.source || "—",
     // items
@@ -196,10 +202,12 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
               <span style={{ fontSize: 13, color: norm.clientAddress ? "#374151" : "#DC2626" }}>
                 📍 {norm.clientAddress || "Sin dirección ⚠️"}
               </span>
-              <button onClick={() => { setNewAddr(norm.clientAddress || ""); setEditingAddr(true); }}
-                style={{ border: "none", background: "none", color: "#6366F1", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
-                Editar
-              </button>
+              {norm.state !== "SHIPPED" && norm.state !== "DELIVERED" && (
+                <button onClick={() => { setNewAddr(norm.clientAddress || ""); setEditingAddr(true); }}
+                  style={{ border: "none", background: "none", color: "#6366F1", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
+                  Editar
+                </button>
+              )}
             </div>
           )}
         </div>

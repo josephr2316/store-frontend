@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Modal } from "./UI";
 import { ordersApi } from "../api/client";
+import { ORDER_STATE_LABELS } from "../constants/index";
 
 export default function OrderHistoryModal({ orderId, onClose }) {
   const [history, setHistory] = useState([]);
@@ -28,10 +29,13 @@ export default function OrderHistoryModal({ orderId, onClose }) {
       ) : (
         <div style={{ animation: "contentIn 0.25s ease-out 0.05s forwards", opacity: 0 }}>
           {history.map((h, i) => {
-            const action = h.action || h.status || h.transition || h.event || h.type || "—";
-            const date   = h.date   || h.createdAt || h.timestamp || h.at   || "";
-            const note   = h.note   || h.comment   || h.description          || "";
-            const by     = h.by     || h.user       || h.createdBy            || "Sistema";
+            // API: fromStatus, toStatus, reason, changedBy, changedAt
+            const fromL = h.fromStatus != null ? (ORDER_STATE_LABELS[h.fromStatus] ?? h.fromStatus) : null;
+            const toL   = h.toStatus   != null ? (ORDER_STATE_LABELS[h.toStatus]   ?? h.toStatus)   : null;
+            const action = h.action ?? (fromL != null && toL != null ? `${fromL} → ${toL}` : (toL ?? "—"));
+            const date   = h.date ?? h.changedAt ?? h.createdAt ?? "";
+            const note   = h.note ?? h.reason ?? h.comment ?? "";
+            const by     = h.by ?? h.changedBy ?? h.user ?? "Sistema";
             return (
               <div key={i} style={{ display: "flex", gap: 12, marginBottom: i < history.length - 1 ? 16 : 0, animation: "listItemIn 0.22s ease-out forwards", animationDelay: `${i * 50}ms`, opacity: 0 }}>
                 <div
