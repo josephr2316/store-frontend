@@ -124,9 +124,9 @@ export const variantsApi = {
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
 export const ordersApi = {
-  /** GET /orders?status=PENDING */
+  /** GET /orders or GET /orders?status=PENDING|CONFIRMED|... (omit or pass undefined for Todos) */
   list: (status) =>
-    apiFetch(status ? `/orders?status=${status}` : "/orders"),
+    apiFetch(status ? `/orders?status=${encodeURIComponent(status)}` : "/orders"),
 
   /** GET /orders/{id} */
   get: (id) => apiFetch(`/orders/${id}`),
@@ -191,6 +191,27 @@ export const reportsApi = {
   weeklySales: (week) =>
     apiFetch(`/reports/weekly-sales${week ? `?week=${encodeURIComponent(week)}` : ""}`),
 
-  /** GET /reports/top-products */
-  topProducts: () => apiFetch("/reports/top-products"),
+  /**
+   * GET /reports/sales-in-range?from=date&to=date
+   * Returns { from, to, totalAmount, totalOrders, byWeek: [{ periodStart, totalAmount, orderCount }] }
+   */
+  salesInRange: (from, to) => {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    return apiFetch(`/reports/sales-in-range?${params.toString()}`);
+  },
+
+  /**
+   * GET /reports/top-products?page=0&size=10&from=isoInstant&to=isoInstant
+   * Returns { content, totalElements, totalPages, number, size }
+   */
+  topProducts: (page = 0, size = 10, from, to) => {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("size", String(size));
+    if (from != null) params.set("from", typeof from === "string" ? from : from.toISOString?.() ?? String(from));
+    if (to != null) params.set("to", typeof to === "string" ? to : to.toISOString?.() ?? String(to));
+    return apiFetch(`/reports/top-products?${params.toString()}`);
+  },
 };
