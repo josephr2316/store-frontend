@@ -36,7 +36,7 @@ export const theme = {
   info: "#3B82F6",
   infoBg: "#DBEAFE",
 
-  // Sombras (más sutiles, estilo moderno)
+  // Shadows (subtle, modern style)
   shadowSm: "0 1px 2px rgba(0, 0, 0, 0.04)",
   shadow: "0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)",
   shadowMd: "0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04)",
@@ -49,7 +49,7 @@ export const theme = {
   radiusMd: 12,
   radiusLg: 16,
 
-  // Espaciado (múltiplos de 4)
+  // Spacing (multiples of 4)
   space: (n) => n * 4,
   fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif",
 };

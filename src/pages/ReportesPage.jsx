@@ -4,14 +4,14 @@ import { fmtCurrency } from "../utils/index";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
-/** Evita NaN o valores no numéricos en la UI */
+/** Prevents NaN or non-numeric values in the UI */
 function safeNum(x) {
   if (x == null) return 0;
   const n = Number(x);
   return typeof n === "number" && !Number.isNaN(n) ? n : 0;
 }
 
-/** Valor seguro para mostrar en tarjetas (nunca "NaN") */
+/** Safe value for display in cards (never "NaN") */
 function safeDisplay(value) {
   if (value == null) return "0";
   if (typeof value === "number" && Number.isNaN(value)) return "0";
@@ -19,12 +19,21 @@ function safeDisplay(value) {
   return s === "NaN" || s === "undefined" || s === "null" ? "0" : s;
 }
 
+const CARD_STYLE = {
+  background: "#fff",
+  border: "1px solid #E2E8F0",
+  borderRadius: 14,
+  padding: "18px 20px",
+  minWidth: 0,
+  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04)",
+};
+
 function StatCard({ label, value, sub, color, delay = 0 }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "16px 18px", minWidth: 0, boxShadow: "0 1px 2px rgba(0,0,0,0.04)", animation: "cardIn 0.35s ease-out forwards", animationDelay: `${delay}ms`, opacity: 0 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 800, color, lineHeight: 1.2 }}>{safeDisplay(value)}</div>
-      <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>{sub}</div>
+    <div style={{ ...CARD_STYLE, animation: "cardIn 0.35s ease-out forwards", animationDelay: `${delay}ms`, opacity: 0 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>{label}</div>
+      <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1.2, letterSpacing: "-0.02em" }}>{safeDisplay(value)}</div>
+      <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 6, lineHeight: 1.4 }}>{sub}</div>
     </div>
   );
 }
@@ -33,7 +42,7 @@ function StatCard({ label, value, sub, color, delay = 0 }) {
 
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
-/** Genera semanas entre dos fechas (para mostrar barras en cero si el API no devuelve datos) */
+/** Generates weeks between two dates (for zero bars when API returns no data) */
 function weeksBetween(fromStr, toStr) {
   if (!fromStr || !toStr) return [];
   const from = new Date(fromStr);
@@ -47,7 +56,7 @@ function weeksBetween(fromStr, toStr) {
   return out;
 }
 
-/** Genera días entre dos fechas (máx 366) para gráfica por día */
+/** Generates days between two dates (max 366) for daily chart */
 function daysBetween(fromStr, toStr) {
   if (!fromStr || !toStr) return [];
   const from = new Date(fromStr);
@@ -61,7 +70,7 @@ function daysBetween(fromStr, toStr) {
   return out;
 }
 
-/** Gráfica ventas por día en el rango. Nunca muestra NaN. */
+/** Daily sales chart for the selected range. Never shows NaN. */
 function DayChart({ rangeData, loading, from, to }) {
   const apiDays = rangeData?.byDay || [];
   const fallbackDays = from && to ? daysBetween(from, to) : [];
@@ -78,30 +87,34 @@ function DayChart({ rangeData, loading, from, to }) {
   const hasBars = bars.length > 0;
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 20, minHeight: 260, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, color: "#0F172A" }}>Ventas por día</div>
+    <div style={{ ...CARD_STYLE, padding: 24, minHeight: 300 }}>
+      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4, color: "#0F172A" }}>Ventas por día</div>
       {from && to && (
-        <div style={{ fontSize: 11, color: "#64748B", marginBottom: 12 }}>
-          Desde {String(from).slice(0, 10)} hasta {String(to).slice(0, 10)} · Total: {fmtCurrency(totalAmount)} · {safeDisplay(totalOrders)} pedido{safeNum(totalOrders) !== 1 ? "s" : ""} entregado{safeNum(totalOrders) !== 1 ? "s" : ""}
+        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 16 }}>
+          {String(from).slice(0, 10)} → {String(to).slice(0, 10)} · Total: <strong style={{ color: "#0F172A" }}>{fmtCurrency(totalAmount)}</strong> · {safeDisplay(totalOrders)} pedido{safeNum(totalOrders) !== 1 ? "s" : ""} entregado{safeNum(totalOrders) !== 1 ? "s" : ""}
         </div>
       )}
       {loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40, gap: 8, color: "#64748B", fontSize: 14 }}>Cargando...</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 48, gap: 12, color: "#64748B", fontSize: 14 }}>
+          <span style={{ width: 24, height: 24, border: "2px solid #E5E7EB", borderTopColor: "#6366F1", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          Cargando…
+        </div>
       ) : !hasBars ? (
-        <div style={{ color: "#9CA3AF", textAlign: "center", padding: 40, fontSize: 14 }}>Sin datos en este rango.</div>
+        <div style={{ color: "#94A3B8", textAlign: "center", padding: 48, fontSize: 14, background: "#F8FAFC", borderRadius: 10 }}>Sin datos en este rango. Elige «Último año» o un rango con pedidos entregados.</div>
       ) : (
-        <div style={{ overflowX: "auto", paddingBottom: 8 }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 160, minWidth: Math.max(bars.length * 12, 400) }}>
+        <div style={{ overflowX: "auto", paddingBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 180, minWidth: Math.max(bars.length * 14, 420) }}>
             {bars.map((bar, i) => {
               const amt = safeNum(bar.amount);
               const count = safeNum(bar.count);
-              const h = Math.max(2, (amt / max) * 140);
-              const displayVal = amt > 0 ? fmtCurrency(amt).replace("RD$", "").trim() : "0";
+              const h = Math.max(4, (amt / max) * 150);
+              const displayVal = amt > 0 ? fmtCurrency(amt).replace("RD$", "").trim() : "";
               return (
-                <div key={bar.key ?? i} style={{ flex: "0 0 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                  <div style={{ fontSize: 8, fontWeight: 600, color: amt > 0 ? "#6366F1" : "#94A3B8" }}>{amt > 0 ? displayVal : ""}</div>
-                  <div style={{ width: 8, background: amt > 0 ? "#6366F1" : "#E2E8F0", borderRadius: "2px 2px 0 0", height: h, minHeight: 2 }} />
-                  {count > 0 && <div style={{ fontSize: 8, color: "#64748B" }}>{count} ped.</div>}
+                <div key={bar.key ?? i} style={{ flex: "0 0 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: amt > 0 ? "#4F46E5" : "#94A3B8" }}>{displayVal}</div>
+                  <div style={{ width: 10, background: amt > 0 ? "linear-gradient(180deg, #6366F1 0%, #4F46E5 100%)" : "#E2E8F0", borderRadius: "3px 3px 0 0", height: h, minHeight: 4 }} />
+                  {count > 0 && <div style={{ fontSize: 9, color: "#64748B" }}>{count} ped.</div>}
+                  <div style={{ fontSize: 8, color: "#94A3B8", maxWidth: 14, overflow: "hidden", textOverflow: "ellipsis" }}>{bar.label || ""}</div>
                 </div>
               );
             })}
@@ -112,7 +125,7 @@ function DayChart({ rangeData, loading, from, to }) {
   );
 }
 
-/** Gráfica por rango: muchas semanas (desde/hasta = 1 año). Nunca muestra NaN. */
+/** Range chart: multiple weeks (e.g. from/to = 1 year). Never shows NaN. */
 function RangeChart({ rangeData, loading, from, to }) {
   const apiWeeks = rangeData?.byWeek || [];
   const fallbackWeeks = from && to ? weeksBetween(from, to) : [];
@@ -129,35 +142,33 @@ function RangeChart({ rangeData, loading, from, to }) {
   const hasBars = bars.length > 0;
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 20, minHeight: 280, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, color: "#0F172A" }}>Ventas por semana (en el rango)</div>
+    <div style={{ ...CARD_STYLE, padding: 24, minHeight: 320 }}>
+      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4, color: "#0F172A" }}>Ventas por semana</div>
       {from && to && (
-        <div style={{ fontSize: 11, color: "#64748B", marginBottom: 12 }}>
-          Desde {String(from).slice(0, 10)} hasta {String(to).slice(0, 10)} · Total: {fmtCurrency(totalAmount)} · {totalOrders} pedido{totalOrders !== 1 ? "s" : ""} entregado{totalOrders !== 1 ? "s" : ""}
+        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 16 }}>
+          {String(from).slice(0, 10)} → {String(to).slice(0, 10)} · Total: <strong style={{ color: "#0F172A" }}>{fmtCurrency(totalAmount)}</strong> · {totalOrders} pedido{totalOrders !== 1 ? "s" : ""} entregado{totalOrders !== 1 ? "s" : ""}
         </div>
       )}
       {loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40, gap: 8, color: "#64748B", fontSize: 14 }}>
-          <span style={{ width: 20, height: 20, border: "2px solid #E5E7EB", borderTopColor: "#6366F1", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          Cargando...
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 48, gap: 12, color: "#64748B", fontSize: 14 }}>
+          <span style={{ width: 24, height: 24, border: "2px solid #E5E7EB", borderTopColor: "#6366F1", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          Cargando…
         </div>
       ) : !hasBars ? (
-        <div style={{ color: "#9CA3AF", textAlign: "center", padding: 40, fontSize: 14 }}>Sin datos en este rango. Comprueba la conexión con el servidor.</div>
+        <div style={{ color: "#94A3B8", textAlign: "center", padding: 48, fontSize: 14, background: "#F8FAFC", borderRadius: 10 }}>Sin datos en este rango. Usa «Último año» para ver el reporte anual.</div>
       ) : (
-        <div style={{ overflowX: "auto", paddingBottom: 8 }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 180, minWidth: Math.max(bars.length * 24, 400) }}>
+        <div style={{ overflowX: "auto", paddingBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 200, minWidth: Math.max(bars.length * 28, 480) }}>
             {bars.map((bar, i) => {
               const amt = safeNum(bar.amount);
               const count = safeNum(bar.count);
-              const h = Math.max(4, (amt / max) * 160);
-              const displayVal = amt > 0 ? fmtCurrency(amt).replace("RD$", "").trim() : "0";
+              const h = Math.max(6, (amt / max) * 170);
+              const displayVal = amt > 0 ? fmtCurrency(amt).replace("RD$", "").trim() : "";
               return (
-                <div key={bar.key ?? i} style={{ flex: "0 0 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, color: amt > 0 ? "#6366F1" : "#94A3B8" }}>
-                    {displayVal}
-                  </div>
-                  <div style={{ width: 16, background: amt > 0 ? "#6366F1" : "#E2E8F0", borderRadius: "4px 4px 0 0", height: h, minHeight: 4 }} />
-                  {count > 0 && <div style={{ fontSize: 8, color: "#64748B" }}>{count} ped.</div>}
+                <div key={bar.key ?? i} style={{ flex: "0 0 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: amt > 0 ? "#4F46E5" : "#94A3B8" }}>{displayVal}</div>
+                  <div style={{ width: 20, background: amt > 0 ? "linear-gradient(180deg, #6366F1 0%, #4F46E5 100%)" : "#E2E8F0", borderRadius: "5px 5px 0 0", height: h, minHeight: 6 }} />
+                  {count > 0 && <div style={{ fontSize: 9, color: "#64748B" }}>{count} ped.</div>}
                   <div style={{ fontSize: 9, color: "#64748B", transform: "rotate(-45deg)", whiteSpace: "nowrap" }}>{bar.label || "—"}</div>
                 </div>
               );
@@ -169,7 +180,7 @@ function RangeChart({ rangeData, loading, from, to }) {
   );
 }
 
-/** Gráfica una semana (7 días). Nunca muestra NaN. */
+/** Single week chart (7 days). Never shows NaN. */
 function WeeklyChart({ data, loading }) {
   const { bars, totalAmount, totalOrders, weekStart } = (() => {
     if (!data) return { bars: [], totalAmount: 0, totalOrders: 0, weekStart: null };
@@ -249,9 +260,9 @@ function TopProducts({ paged, loading, page, totalPages, totalElements, pageSize
   const start = pageIndex * (safeNum(pageSize) || 10) + 1;
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 20, minHeight: 220, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-        <div style={{ fontWeight: 700, fontSize: 15, color: "#0F172A" }}>Top Productos</div>
+    <div style={{ ...CARD_STYLE, padding: 24, minHeight: 260 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        <div style={{ fontWeight: 700, fontSize: 16, color: "#0F172A" }}>Top Productos</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
           <label style={{ color: "#64748B" }}>Mostrar:</label>
           <select value={pageSize} onChange={e => onSizeChange?.(Number(e.target.value))} style={{ border: "1px solid #E5E7EB", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
@@ -262,7 +273,7 @@ function TopProducts({ paged, loading, page, totalPages, totalElements, pageSize
       {loading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 24, gap: 8, color: "#64748B", fontSize: 13 }}>Cargando...</div>
       ) : items.length === 0 ? (
-        <div style={{ color: "#64748B", fontSize: 13 }}>No hay productos vendidos en el rango de fechas seleccionado. Prueba un rango que incluya los últimos días (pedidos entregados).</div>
+        <div style={{ color: "#64748B", fontSize: 13, padding: 16, background: "#F8FAFC", borderRadius: 10 }}>No hay productos vendidos en el rango. Usa el atajo <strong>Último año</strong> para ver datos del año anterior.</div>
       ) : (
         <>
           {items.map(([name, qty], i) => (
@@ -395,27 +406,35 @@ export default function ReportesPage({ store }) {
   ];
 
   return (
-    <div style={{ padding: "24px 28px", overflowY: "auto", height: "100%", maxWidth: 1400, margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 6, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0F0F19" }}>Reportes</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, color: "#64748B", marginRight: 4 }}>Atajos:</span>
-          <button type="button" onClick={() => { const d = new Date(); d.setDate(d.getDate() - 1); const y = d.toISOString().slice(0, 10); setDateDesde(y); setDateHasta(y); }} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Ayer</button>
-          <button type="button" onClick={() => { const end = new Date(); const start = new Date(); start.setDate(start.getDate() - 6); setDateDesde(start.toISOString().slice(0, 10)); setDateHasta(end.toISOString().slice(0, 10)); }} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Últimos 7 días</button>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "#6B7280" }}>Desde:</label>
+    <div style={{ padding: "28px 32px", overflowY: "auto", height: "100%", maxWidth: 1440, margin: "0 auto", background: "#F1F5F9" }}>
+      <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: "1px solid #E2E8F0" }}>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>Reportes</h2>
+        <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748B", maxWidth: 720 }}>
+          Ventas por semana y productos top según el rango elegido. Datos desde hace un año hasta hoy. Pedidos pendientes, en sistema y stock bajo reflejan el estado actual.
+        </p>
+      </div>
+
+      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "20px 24px", marginBottom: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Rango:</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => { setDateDesde(defaultDesde); setDateHasta(today); }} style={{ border: "1px solid #6366F1", background: "#EEF2FF", color: "#4F46E5", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Último año</button>
+            <button type="button" onClick={() => { const d = new Date(); d.setDate(d.getDate() - 1); const y = d.toISOString().slice(0, 10); setDateDesde(y); setDateHasta(y); }} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#475569" }}>Ayer</button>
+            <button type="button" onClick={() => { const end = new Date(); const start = new Date(); start.setDate(start.getDate() - 6); setDateDesde(start.toISOString().slice(0, 10)); setDateHasta(end.toISOString().slice(0, 10)); }} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#475569" }}>Últimos 7 días</button>
+          </div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginLeft: 8 }}>Desde</label>
           <input type="date" value={dateDesde || defaultDesde} onChange={e => setDateDesde(e.target.value)}
-            style={{ border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "6px 10px", fontSize: 13, fontFamily: "inherit" }} />
-          <label style={{ fontSize: 12, fontWeight: 600, color: "#6B7280" }}>Hasta:</label>
+            style={{ border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontFamily: "inherit" }} />
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Hasta</label>
           <input type="date" value={dateHasta || today} onChange={e => setDateHasta(e.target.value)}
-            style={{ border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "6px 10px", fontSize: 13, fontFamily: "inherit" }} />
-          <span style={{ fontSize: 11, color: "#94A3B8" }}>Rango: {desdeDisplay} → {hastaDisplay}</span>
+            style={{ border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontFamily: "inherit" }} />
+          <span style={{ fontSize: 12, color: "#94A3B8" }}>{desdeDisplay} → {hastaDisplay}</span>
           <button onClick={fetchReports} disabled={loadingRep}
-            style={{ background: "#6366F1", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600, cursor: loadingRep ? "wait" : "pointer", fontFamily: "inherit", minWidth: 90 }}>
+            style={{ marginLeft: "auto", background: "#6366F1", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: loadingRep ? "wait" : "pointer", fontFamily: "inherit", minWidth: 100, boxShadow: "0 2px 4px rgba(99,102,241,0.3)" }}>
             {loadingRep ? "Cargando…" : "Actualizar"}
           </button>
         </div>
       </div>
-      <p style={{ margin: "0 0 14px", fontSize: 12, color: "#64748B" }}>Elige un rango de fechas (Desde / Hasta). Se muestran ventas por día, por semana, top productos y totales en ese rango. Pedidos pendientes, en sistema y stock bajo: estado actual.</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14, marginBottom: 24 }}>
         {statCards.map((c, i) => <StatCard key={c.label} {...c} delay={i * 60} />)}
@@ -439,8 +458,8 @@ export default function ReportesPage({ store }) {
           />
 
           {/* Low stock */}
-          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 20, boxShadow: "0 1px 2px rgba(0,0,0,0.04)", animation: "cardIn 0.35s ease-out 0.2s forwards", opacity: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, color: "#0F172A" }}>⚠️ Stock Bajo</div>
+          <div style={{ ...CARD_STYLE, padding: 24 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: "#0F172A" }}>⚠️ Stock Bajo</div>
             <div style={{ fontSize: 11, color: "#64748B", marginBottom: 12 }}>Variantes con ≤ 3 unidades disponibles (stock − reservado)</div>
             {balances.filter(b => {
               const stock    = b.stock    ?? b.quantity    ?? 0;

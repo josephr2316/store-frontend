@@ -114,7 +114,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* Page (animación al cambiar de pestaña) */}
+        {/* Page (animation on tab change) */}
         <div style={{ flex: 1, overflow: "hidden" }}>
           {tab === "Pedidos"  && <div className="animate-page" style={{ height: "100%" }}><PedidosPage  store={store} toast={toast} /></div>}
           {tab === "Caja"     && <div className="animate-page" style={{ height: "100%" }}><CajaPage     store={store} toast={toast} /></div>}

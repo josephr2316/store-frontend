@@ -3,7 +3,7 @@ import { Btn, Input, Modal, AlertBox } from "../components/UI";
 import { inventoryApi } from "../api/client";
 import { fmtCurrency } from "../utils/index";
 
-// ─── Helpers: variant display from API (puede venir en raíz o en attributes) ───
+// ─── Helpers: variant display from API (may be at root or in attributes) ───
 function variantPrice(v) {
   const n = v.price ?? v.unitPrice ?? v.attributes?.price ?? v.attributes?.unitPrice;
   return n != null ? Number(n) : 0;

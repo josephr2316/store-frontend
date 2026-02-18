@@ -1,7 +1,7 @@
 // ─── API CLIENT ───────────────────────────────────────────────────────────────
 // Central HTTP layer. All calls go through here.
 // Automatically attaches JWT Bearer token and handles 401 logout.
-// URL del backend: VITE_API_URL (en Vercel debe ser la URL pública de Railway).
+// Backend URL: VITE_API_URL (on Vercel set to the public Railway URL).
 
 import { API_BASE } from "../constants/index.js";
 

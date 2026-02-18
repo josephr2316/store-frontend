@@ -2,6 +2,8 @@
 
 Sistema de gestión de pedidos, inventario y ventas para tiendas con canales WhatsApp/Instagram/Shopify.
 
+**Otros idiomas:** [README.en.md](README.en.md) (English)
+
 ---
 
 ## Estructura del proyecto
