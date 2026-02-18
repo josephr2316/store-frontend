@@ -58,14 +58,13 @@ function StatCard({ label, value, sub, color, delay = 0 }) {
 // ─── CHARTS ───────────────────────────────────────────────────────────────────
 
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+const MONTH_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-/** Generates weeks between two dates (for zero bars when API returns no data) */
+/** Generates weeks between two dates */
 function weeksBetween(fromStr, toStr) {
   if (!fromStr || !toStr) return [];
-  const from = new Date(fromStr);
-  const to = new Date(toStr);
-  const out = [];
-  const d = new Date(from);
+  const from = new Date(fromStr); const to = new Date(toStr);
+  const out = []; const d = new Date(from);
   while (d <= to && out.length < 53) {
     out.push({ periodStart: d.toISOString().slice(0, 10), totalAmount: 0, orderCount: 0 });
     d.setDate(d.getDate() + 7);
@@ -73,13 +72,11 @@ function weeksBetween(fromStr, toStr) {
   return out;
 }
 
-/** Generates days between two dates (max 366) for daily chart */
+/** Generates days between two dates */
 function daysBetween(fromStr, toStr) {
   if (!fromStr || !toStr) return [];
-  const from = new Date(fromStr);
-  const to = new Date(toStr);
-  const out = [];
-  const d = new Date(from);
+  const from = new Date(fromStr); const to = new Date(toStr);
+  const out = []; const d = new Date(from);
   for (let n = 0; n < 366 && d <= to; n++) {
     out.push({ date: d.toISOString().slice(0, 10), totalAmount: 0, orderCount: 0 });
     d.setDate(d.getDate() + 1);
@@ -87,191 +84,263 @@ function daysBetween(fromStr, toStr) {
   return out;
 }
 
-/** Daily sales chart. Fixed size; shows at most MAX_DAILY_BARS (last N days). */
+/**
+ * TradingView-style SVG area chart.
+ * - Gradient fill below the line
+ * - Sparse X labels (only when month changes, or every N points)
+ * - Y-axis scale ticks
+ * - Tooltip on hover
+ */
+function AreaChart({ points, color, gradientId, totalAmount, totalOrders, from, to, loading, title, emptyMsg, labelEvery }) {
+  const [tooltip, setTooltip] = useState(null);
+
+  const W = 680, H = 200, PAD_L = 56, PAD_R = 12, PAD_T = 16, PAD_B = 32;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+  const n = points.length;
+  const maxVal = Math.max(...points.map(p => p.amount), 1);
+
+  // Compute x,y for each point
+  const pts = points.map((p, i) => ({
+    ...p,
+    x: PAD_L + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW),
+    y: PAD_T + plotH - (p.amount / maxVal) * plotH,
+  }));
+
+  // Build smooth SVG path using cubic bezier
+  const linePath = pts.length < 2
+    ? (pts.length === 1 ? `M${pts[0].x},${pts[0].y}` : "")
+    : pts.reduce((acc, p, i) => {
+        if (i === 0) return `M${p.x},${p.y}`;
+        const prev = pts[i - 1];
+        const cx1 = prev.x + (p.x - prev.x) * 0.4;
+        const cx2 = p.x  - (p.x - prev.x) * 0.4;
+        return `${acc} C${cx1},${prev.y} ${cx2},${p.y} ${p.x},${p.y}`;
+      }, "");
+
+  const areaPath = pts.length < 2 ? "" :
+    `${linePath} L${pts[pts.length-1].x},${PAD_T+plotH} L${pts[0].x},${PAD_T+plotH} Z`;
+
+  // Y ticks (0, 25%, 50%, 75%, 100%)
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(t => ({
+    y: PAD_T + plotH - t * plotH,
+    val: t * maxVal,
+  }));
+
+  // X labels: show only when month changes, or max every labelEvery points
+  const every = labelEvery ?? Math.max(1, Math.ceil(n / 8));
+  const xLabels = pts.filter((p, i) => {
+    if (n <= 8) return true;
+    if (i === 0 || i === n - 1) return true;
+    if (!p.date) return i % every === 0;
+    const d = new Date(p.date);
+    const prev = pts[i - 1]?.date ? new Date(pts[i - 1].date) : null;
+    return prev ? d.getMonth() !== prev.getMonth() : i % every === 0;
+  });
+
+  const fmtXLabel = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return `${MONTH_SHORT[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+  };
+
+  const fmtYTick = (val) => {
+    if (val >= 1_000_000) return `${(val/1_000_000).toFixed(1)}M`;
+    if (val >= 1_000)     return `${(val/1_000).toFixed(0)}K`;
+    return val === 0 ? "0" : val.toFixed(0);
+  };
+
+  return (
+    <div style={{ ...CARD_STYLE, padding: "20px 20px 16px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4, flexWrap: "wrap", gap: 8 }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 16, color: "#0F172A" }}>{title}</div>
+          {from && to && (
+            <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+              {String(from).slice(0,10)} → {String(to).slice(0,10)} ·{" "}
+              <strong style={{ color }}>{fmtCurrency(safeNum(totalAmount))}</strong> ·{" "}
+              {safeNum(totalOrders)} entregado{safeNum(totalOrders) !== 1 ? "s" : ""}
+            </div>
+          )}
+        </div>
+        {tooltip && (
+          <div style={{ background: "#0F172A", color: "#fff", borderRadius: 8, padding: "6px 12px", fontSize: 12, lineHeight: 1.5 }}>
+            <div style={{ fontWeight: 700 }}>{fmtCurrency(tooltip.amount)}</div>
+            <div style={{ color: "#94A3B8", fontSize: 11 }}>{tooltip.date}</div>
+          </div>
+        )}
+      </div>
+      {loading ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: H, gap: 12, color: "#64748B", fontSize: 14 }}>
+          <span style={{ width: 24, height: 24, border: "2px solid #E5E7EB", borderTopColor: color, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          Cargando…
+        </div>
+      ) : pts.length === 0 ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: H, color: "#94A3B8", fontSize: 14, background: "#F8FAFC", borderRadius: 10 }}>
+          {emptyMsg || "Sin datos en este rango"}
+        </div>
+      ) : (
+        <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
+          style={{ display: "block", overflow: "visible" }}
+          onMouseLeave={() => setTooltip(null)}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor={color} stopOpacity="0.25" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
+          {/* Grid lines */}
+          {yTicks.map((t, i) => (
+            <line key={i} x1={PAD_L} y1={t.y} x2={W - PAD_R} y2={t.y}
+              stroke="#E2E8F0" strokeWidth={i === yTicks.length - 1 ? 1.5 : 0.8} strokeDasharray={i === yTicks.length - 1 ? "" : "4 3"} />
+          ))}
+          {/* Area fill */}
+          {areaPath && <path d={areaPath} fill={`url(#${gradientId})`} />}
+          {/* Line */}
+          {linePath && <path d={linePath} fill="none" stroke={color} strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" />}
+          {/* Y-axis labels */}
+          {yTicks.map((t, i) => (
+            <text key={i} x={PAD_L - 6} y={t.y + 3.5} textAnchor="end" fontSize={9} fill="#94A3B8" fontFamily="inherit">
+              {fmtYTick(t.val)}
+            </text>
+          ))}
+          {/* X-axis labels */}
+          {xLabels.map((p, i) => (
+            <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize={9} fill="#94A3B8" fontFamily="inherit">
+              {fmtXLabel(p.date)}
+            </text>
+          ))}
+          {/* Hover regions — invisible rects per point */}
+          {pts.map((p, i) => {
+            const halfStep = n <= 1 ? plotW / 2 : plotW / n / 2;
+            return (
+              <rect key={i}
+                x={p.x - halfStep} y={PAD_T}
+                width={halfStep * 2} height={plotH + PAD_B}
+                fill="transparent"
+                onMouseEnter={() => setTooltip({ amount: p.amount, date: p.date ? String(p.date).slice(0,10) : "" })}
+              />
+            );
+          })}
+          {/* Tooltip dot */}
+          {tooltip && (() => {
+            const tp = pts.find(p => String(p.date).slice(0,10) === tooltip.date);
+            if (!tp) return null;
+            return (
+              <>
+                <line x1={tp.x} y1={PAD_T} x2={tp.x} y2={PAD_T + plotH} stroke={color} strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
+                <circle cx={tp.x} cy={tp.y} r={5} fill="#fff" stroke={color} strokeWidth={2} />
+              </>
+            );
+          })()}
+        </svg>
+      )}
+    </div>
+  );
+}
+
+/** Daily sales chart — TradingView area style */
 function DayChart({ rangeData, loading, from, to }) {
   const apiDays = rangeData?.byDay || [];
   const fallbackDays = from && to ? daysBetween(from, to) : [];
-  const allBars = (apiDays.length > 0 ? apiDays : fallbackDays).map((d, i) => ({
-    label: d.date ? String(d.date).slice(5) : "",
+  const source = apiDays.length > 0 ? apiDays : fallbackDays;
+  const all = source.map((d, i) => ({
+    date: d.date ?? `d-${i}`,
     amount: safeNum(d.totalAmount),
     count: safeNum(d.orderCount),
-    date: d.date,
-    key: d.date ?? `d-${i}`,
   }));
-  const bars = allBars.length > MAX_DAILY_BARS ? allBars.slice(-MAX_DAILY_BARS) : allBars;
-  const totalAmount = (rangeData != null && (safeNum(rangeData.totalAmount) > 0 || allBars.length === 0)) ? safeNum(rangeData.totalAmount) : allBars.reduce((s, b) => s + b.amount, 0);
-  const totalOrders = (rangeData != null && (safeNum(rangeData.totalOrders) > 0 || allBars.length === 0)) ? safeNum(rangeData.totalOrders) : allBars.reduce((s, b) => s + b.count, 0);
-  const max = Math.max(...bars.map(b => b.amount), 1);
-  const hasBars = bars.length > 0;
-  const barWidth = hasBars ? Math.max(14, CHART_VIEWPORT_WIDTH / bars.length - 4) : 20;
+  const capped = all.length > MAX_DAILY_BARS ? all.slice(-MAX_DAILY_BARS) : all;
+  const totalAmount = safeNum(rangeData?.totalAmount) || all.reduce((s, b) => s + b.amount, 0);
+  const totalOrders = safeNum(rangeData?.totalOrders) || all.reduce((s, b) => s + b.count, 0);
 
   return (
-    <div style={{ ...CARD_STYLE, padding: 24, minHeight: 320, maxWidth: CHART_VIEWPORT_WIDTH + 48 }}>
-      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4, color: "#0F172A" }}>Ventas por día</div>
-      {from && to && (
-        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 12 }}>
-          {String(from).slice(0, 10)} → {String(to).slice(0, 10)} · Total: <strong style={{ color: COLORS.primaryDark }}>{fmtCurrency(totalAmount)}</strong> · {safeDisplay(totalOrders)} pedido{safeNum(totalOrders) !== 1 ? "s" : ""} entregado{safeNum(totalOrders) !== 1 ? "s" : ""}
-          {allBars.length > MAX_DAILY_BARS && <span style={{ marginLeft: 8, color: "#94A3B8" }}>(gráfica: últimos {MAX_DAILY_BARS} días)</span>}
-        </div>
-      )}
-      {loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: CHART_HEIGHT, gap: 12, color: "#64748B", fontSize: 14 }}>
-          <span style={{ width: 24, height: 24, border: "2px solid #E5E7EB", borderTopColor: COLORS.primary, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          Cargando…
-        </div>
-      ) : !hasBars ? (
-        <div style={{ color: "#94A3B8", textAlign: "center", padding: 48, fontSize: 14, background: "#F0F9FF", borderRadius: 10, height: CHART_HEIGHT, display: "flex", alignItems: "center", justifyContent: "center" }}>Sin datos en este rango. Usa 7 días, 1 mes o Último año.</div>
-      ) : (
-        <div style={{ width: "100%", maxWidth: CHART_VIEWPORT_WIDTH, height: CHART_HEIGHT }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: CHART_HEIGHT - 32 }}>
-            {bars.map((bar, i) => {
-              const amt = safeNum(bar.amount);
-              const count = safeNum(bar.count);
-              const h = Math.max(4, (amt / max) * (CHART_HEIGHT - 56));
-              const displayVal = amt > 0 ? fmtCurrency(amt).replace("RD$", "").trim() : "";
-              return (
-                <div key={bar.key ?? i} style={{ flex: `0 0 ${barWidth}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, color: amt > 0 ? COLORS.primaryDark : "#94A3B8" }}>{displayVal}</div>
-                  <div style={{ width: Math.max(8, barWidth - 4), background: amt > 0 ? `linear-gradient(180deg, ${COLORS.primary} 0%, ${COLORS.primaryDark} 100%)` : "#E2E8F0", borderRadius: "3px 3px 0 0", height: h, minHeight: 4 }} />
-                  {count > 0 && <div style={{ fontSize: 8, color: "#64748B" }}>{count} ped.</div>}
-                  <div style={{ fontSize: 8, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{bar.label || ""}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
+    <AreaChart
+      points={capped}
+      color={COLORS.primary}
+      gradientId="dayGrad"
+      totalAmount={totalAmount}
+      totalOrders={totalOrders}
+      from={from} to={to}
+      loading={loading}
+      title="Ventas por día"
+      emptyMsg="Sin datos. Usa 7 días, 1 mes o Último año."
+      labelEvery={Math.max(1, Math.ceil(capped.length / 8))}
+    />
   );
 }
 
-/** Weekly sales chart. Fixed size; shows at most MAX_WEEKLY_BARS. Y-axis scale and visible zero bars. */
+/** Weekly sales chart — TradingView area style */
 function RangeChart({ rangeData, loading, from, to }) {
   const apiWeeks = rangeData?.byWeek || [];
   const fallbackWeeks = from && to ? weeksBetween(from, to) : [];
-  const allBars = (apiWeeks.length > 0 ? apiWeeks : fallbackWeeks).map((w, i) => ({
-    label: w.periodStart ? String(w.periodStart).slice(5) : "",
+  const source = apiWeeks.length > 0 ? apiWeeks : fallbackWeeks;
+  const all = source.map((w, i) => ({
+    date: w.periodStart ?? `w-${i}`,
     amount: safeNum(w.totalAmount),
     count: safeNum(w.orderCount),
-    date: w.periodStart,
-    key: w.periodStart ?? `w-${i}`,
   }));
-  const bars = allBars.length > MAX_WEEKLY_BARS ? allBars.slice(-MAX_WEEKLY_BARS) : allBars;
-  const totalAmount = safeNum(rangeData?.totalAmount) || allBars.reduce((s, b) => s + b.amount, 0);
-  const totalOrders = safeNum(rangeData?.totalOrders) || allBars.reduce((s, b) => s + b.count, 0);
-  const maxAmount = Math.max(...bars.map(b => b.amount), 1);
-  const hasBars = bars.length > 0;
-  const barWidth = hasBars ? Math.max(12, CHART_VIEWPORT_WIDTH / bars.length - 2) : 16;
-  const chartAreaHeight = CHART_HEIGHT - 48;
-  const zeroBarHeight = 10;
+  const capped = all.length > MAX_WEEKLY_BARS ? all.slice(-MAX_WEEKLY_BARS) : all;
+  const totalAmount = safeNum(rangeData?.totalAmount) || all.reduce((s, b) => s + b.amount, 0);
+  const totalOrders = safeNum(rangeData?.totalOrders) || all.reduce((s, b) => s + b.count, 0);
 
   return (
-    <div style={{ ...CARD_STYLE, padding: 24, minHeight: 320, maxWidth: CHART_VIEWPORT_WIDTH + 80 }}>
-      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4, color: "#0F172A" }}>Ventas por semana</div>
-      {from && to && (
-        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 12 }}>
-          {String(from).slice(0, 10)} → {String(to).slice(0, 10)} · Total: <strong style={{ color: COLORS.accent }}>{fmtCurrency(totalAmount)}</strong> · {totalOrders} pedido{totalOrders !== 1 ? "s" : ""} entregado{totalOrders !== 1 ? "s" : ""}
-          {allBars.length > MAX_WEEKLY_BARS && <span style={{ marginLeft: 8, color: "#94A3B8" }}>(gráfica: últimas {MAX_WEEKLY_BARS} semanas)</span>}
-        </div>
-      )}
-      {loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: CHART_HEIGHT, gap: 12, color: "#64748B", fontSize: 14 }}>
-          <span style={{ width: 24, height: 24, border: "2px solid #E5E7EB", borderTopColor: COLORS.accent, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          Cargando…
-        </div>
-      ) : !hasBars ? (
-        <div style={{ color: "#94A3B8", textAlign: "center", padding: 48, fontSize: 14, background: "#FAF5FF", borderRadius: 10, height: CHART_HEIGHT, display: "flex", alignItems: "center", justifyContent: "center" }}>Sin datos en este rango. Usa 1 mes o Último año.</div>
-      ) : (
-        <div style={{ display: "flex", alignItems: "stretch", width: "100%", maxWidth: CHART_VIEWPORT_WIDTH + 48 }}>
-          {/* Y-axis: scale 0 and max */}
-          <div style={{ width: 48, flexShrink: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", fontSize: 10, color: "#64748B", paddingRight: 8 }}>
-            <span style={{ fontWeight: 600, color: "#0F172A" }}>{maxAmount > 0 ? fmtCurrency(maxAmount).replace("RD$", "").trim() : "0"}</span>
-            <span style={{ fontWeight: 600 }}>0</span>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: chartAreaHeight }}>
-              {bars.map((bar, i) => {
-                const amt = safeNum(bar.amount);
-                const count = safeNum(bar.count);
-                const barHeight = amt > 0
-                  ? Math.max(zeroBarHeight, (amt / maxAmount) * (chartAreaHeight - 24))
-                  : zeroBarHeight;
-                const displayVal = amt > 0 ? fmtCurrency(amt).replace("RD$", "").trim() : "0";
-                return (
-                  <div key={bar.key ?? i} style={{ flex: `0 0 ${barWidth}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <div style={{ fontSize: 9, fontWeight: 600, color: amt > 0 ? COLORS.accent : "#94A3B8" }}>{displayVal}</div>
-                    <div style={{ width: Math.max(10, barWidth - 2), background: amt > 0 ? `linear-gradient(180deg, ${COLORS.accent} 0%, #6D28D9 100%)` : "#E2E8F0", borderRadius: "4px 4px 0 0", height: barHeight, minHeight: zeroBarHeight }} />
-                    {count > 0 && <div style={{ fontSize: 8, color: "#64748B" }}>{count} ped.</div>}
-                    <div style={{ fontSize: 8, color: "#64748B", transform: "rotate(-45deg)", whiteSpace: "nowrap" }}>{bar.label || "—"}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    <AreaChart
+      points={capped}
+      color={COLORS.accent}
+      gradientId="weekGrad"
+      totalAmount={totalAmount}
+      totalOrders={totalOrders}
+      from={from} to={to}
+      loading={loading}
+      title="Ventas por semana"
+      emptyMsg="Sin datos. Usa 1 mes o Último año."
+      labelEvery={Math.max(1, Math.ceil(capped.length / 8))}
+    />
   );
 }
 
-/** Single week chart (7 days). Never shows NaN. */
+/** Single week chart (7 days) — bar style kept for daily granularity */
 function WeeklyChart({ data, loading }) {
-  const { bars, totalAmount, totalOrders, weekStart } = (() => {
-    if (!data) return { bars: [], totalAmount: 0, totalOrders: 0, weekStart: null };
+  const { points, totalAmount, totalOrders, weekStart } = (() => {
+    if (!data) return { points: [], totalAmount: 0, totalOrders: 0, weekStart: null };
     if (data.dailyBreakdown && Array.isArray(data.dailyBreakdown) && data.dailyBreakdown.length > 0) {
-      const bars = data.dailyBreakdown.map(d => ({
-        label: d.date ? (DAY_LABELS[(new Date(d.date).getDay() + 6) % 7] || String(d.date).slice(5)) : "",
+      const pts = data.dailyBreakdown.map(d => ({
+        date: d.date ?? "",
+        label: d.date ? (DAY_LABELS[(new Date(d.date).getDay() + 6) % 7] ?? String(d.date).slice(5)) : "",
         amount: safeNum(d.totalAmount),
         count: safeNum(d.orderCount),
-        date: d.date,
       }));
-      return { bars, totalAmount: bars.reduce((s, b) => s + b.amount, 0), totalOrders: bars.reduce((s, b) => s + b.count, 0), weekStart: data.weekStart };
+      return { points: pts, totalAmount: pts.reduce((s, b) => s + b.amount, 0), totalOrders: pts.reduce((s, b) => s + b.count, 0), weekStart: data.weekStart };
     }
-    if (Array.isArray(data)) {
-      const bars = data.map((d, i) => {
-        const date = d.date || d.day || d.week || Object.keys(d)[0];
-        const val = d.total ?? d.sales ?? d.amount ?? Object.values(d)[0] ?? 0;
-        return { label: String(date).slice(-5), amount: safeNum(val), count: 0, date: date ?? `idx-${i}` };
-      });
-      return { bars, totalAmount: bars.reduce((s, b) => s + b.amount, 0), totalOrders: 0, weekStart: data.weekStart ?? null };
-    }
-    if (typeof data.totalAmount === "number" || data.totalAmount != null) {
-      const amt = safeNum(data.totalAmount);
-      return { bars: [{ label: "Total", amount: amt, count: safeNum(data.orderCount), date: data.weekStart }], totalAmount: amt, totalOrders: safeNum(data.orderCount), weekStart: data.weekStart };
-    }
-    if (data && typeof data === "object" && !Array.isArray(data) && ("weekStart" in data || "orderCount" in data || "totalAmount" in data)) {
-      const amt = safeNum(data.totalAmount);
-      const count = safeNum(data.orderCount);
-      return { bars: [{ label: "Total", amount: amt, count, date: data.weekStart }], totalAmount: amt, totalOrders: count, weekStart: data.weekStart };
-    }
-    return { bars: [], totalAmount: 0, totalOrders: 0, weekStart: null };
+    return { points: [], totalAmount: 0, totalOrders: 0, weekStart: null };
   })();
 
-  const max = Math.max(...bars.map(b => b.amount), 1);
-  const hasData = bars.length > 0 && (totalAmount > 0 || totalOrders > 0);
+  const max = Math.max(...points.map(p => p.amount), 1);
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 20, minHeight: 260, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, color: "#0F172A" }}>Ventas Semanales</div>
+    <div style={{ ...CARD_STYLE, padding: 20 }}>
+      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4, color: "#0F172A" }}>Ventas Semanales</div>
       {weekStart && (
         <div style={{ fontSize: 11, color: "#64748B", marginBottom: 12 }}>
-          Semana del {typeof weekStart === "string" ? weekStart.slice(0, 10) : weekStart} · Total: {fmtCurrency(totalAmount)} · {totalOrders} pedido{totalOrders !== 1 ? "s" : ""} entregado{totalOrders !== 1 ? "s" : ""}
+          Semana del {typeof weekStart === "string" ? weekStart.slice(0,10) : weekStart} ·{" "}
+          <strong style={{ color: COLORS.success }}>{fmtCurrency(totalAmount)}</strong> ·{" "}
+          {totalOrders} entregado{totalOrders !== 1 ? "s" : ""}
         </div>
       )}
       {loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40, gap: 8, color: "#64748B", fontSize: 14 }}>Cargando...</div>
-      ) : !hasData ? (
-        <div style={{ color: "#9CA3AF", textAlign: "center", padding: 40, fontSize: 14 }}>Sin datos para esta semana</div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:40, gap:8, color:"#64748B", fontSize:14 }}>Cargando...</div>
+      ) : points.length === 0 ? (
+        <div style={{ color:"#9CA3AF", textAlign:"center", padding:40, fontSize:14 }}>Sin datos para esta semana</div>
       ) : (
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 180 }}>
-          {bars.map((bar, i) => {
-            const h = Math.max(6, (bar.amount / max) * 160);
+        <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:160, padding:"0 4px" }}>
+          {points.map((p) => {
+            const h = Math.max(6, (p.amount / max) * 140);
             return (
-              <div key={bar.date != null ? String(bar.date) : `idx-${i}`} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#6366F1" }}>{bar.amount > 0 ? fmtCurrency(bar.amount).replace("RD$", "").trim() : "—"}</div>
-                <div style={{ width: "100%", background: bar.amount > 0 ? "#6366F1" : "#E2E8F0", borderRadius: "6px 6px 0 0", height: h, minHeight: 6 }} />
-                <div style={{ fontSize: 10, color: "#64748B" }}>{bar.label}</div>
-                {bar.count > 0 && <div style={{ fontSize: 9, color: "#94A3B8" }}>{bar.count} ped.</div>}
+              <div key={p.date || p.label} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                {p.amount > 0 && <div style={{ fontSize:9, fontWeight:700, color:COLORS.success }}>{fmtCurrency(p.amount).replace("RD$","").trim()}</div>}
+                <div style={{ width:"80%", background: p.amount > 0 ? `linear-gradient(180deg,${COLORS.success} 0%,#059669 100%)` : "#E2E8F0", borderRadius:"4px 4px 0 0", height:h, minHeight:6 }} />
+                <div style={{ fontSize:10, color:"#64748B", fontWeight:600 }}>{p.label}</div>
+                {p.count > 0 && <div style={{ fontSize:9, color:"#94A3B8" }}>{p.count}p</div>}
               </div>
             );
           })}
