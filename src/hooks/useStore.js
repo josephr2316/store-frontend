@@ -116,18 +116,26 @@ export function useStore() {
 
   // ── Orders ─────────────────────────────────────────────────────────────────────
 
-  const fetchOrders = useCallback(async (status) => {
+  const fetchOrders = useCallback(async (status, page = 0, size = 30) => {
     setError(null);
     startLoad("orders");
     try {
-      const data = await ordersApi.list(status);
-      setOrders(data || []);
+      const data = await ordersApi.list(status, page, size);
+      // API now returns Page { content, totalElements, totalPages, number, size }
+      const content = Array.isArray(data) ? data : (data?.content ?? []);
+      if (page === 0) {
+        setOrders(content);
+      } else {
+        setOrders(prev => [...prev, ...content]);
+      }
       setError(null);
+      return data; // return full page for caller to check totalPages
     } catch (e) {
       const msg = e?.message === "Failed to fetch"
         ? "No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde."
         : (e?.message || "Error de conexión");
       setError(msg);
+      return null;
     }
     finally { endLoad("orders"); }
   }, []);

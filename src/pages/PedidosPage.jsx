@@ -62,7 +62,7 @@ const FILTER_LABELS = {
   PREPARING: "Preparando", SHIPPED: "Enviado", DELIVERED: "Entregado", CANCELLED: "Cancelado",
 };
 
-function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, loading }) {
+function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, loading, hasMore, onLoadMore, loadingMore }) {
   const FILTERS = ["ALL","PENDING","CONFIRMED","PREPARING","SHIPPED","DELIVERED","CANCELLED"];
   return (
     <div style={{ width: 360, minWidth: 320, background: "#fff", borderRight: "1px solid #E2E8F0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
@@ -84,7 +84,7 @@ function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, 
           </div>
         )}
         {!loading && orders.length === 0 && (
-          <div style={{ padding: 32, textAlign: "center", color: "#94A3B8", fontSize: 14 }}>Sin pedidos</div>
+          <div style={{ padding: 32, textAlign: "center", color: "#94A3B8", fontSize: 14 }}>Sin pedidos en este estado</div>
         )}
         {orders.map((o, index) => {
           const norm = normaliseOrder(o);
@@ -125,6 +125,17 @@ function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, 
             </div>
           );
         })}
+        {/* Load more button */}
+        {hasMore && (
+          <div style={{ padding: "12px 16px", borderTop: "1px solid #F1F5F9" }}>
+            <button
+              onClick={onLoadMore}
+              disabled={loadingMore}
+              style={{ width: "100%", padding: "8px 0", fontSize: 13, fontWeight: 600, color: "#6366F1", background: "#EEF2FF", border: "1px solid #C7D2FE", borderRadius: 8, cursor: loadingMore ? "wait" : "pointer", fontFamily: "inherit" }}>
+              {loadingMore ? "Cargando…" : "Cargar más pedidos"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -283,6 +294,8 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 30;
+
 export default function PedidosPage({ store, toast }) {
   const { orders, loading, fetchOrders, fetchOrderById, transitionOrder, updateOrderAddress } = store;
   const [selectedId,     setSelectedId]     = useState(null);
@@ -292,11 +305,32 @@ export default function PedidosPage({ store, toast }) {
   const [showCreate,     setShowCreate]     = useState(false);
   const [whatsAppId,     setWhatsAppId]     = useState(null);
   const [historyId,      setHistoryId]      = useState(null);
+  const [currentPage,    setCurrentPage]    = useState(0);
+  const [hasMore,        setHasMore]        = useState(false);
+  const [loadingMore,    setLoadingMore]    = useState(false);
 
-  // Load orders list on mount and when filter changes
+  // Load first page when filter changes
   useEffect(() => {
-    fetchOrders(filter === "ALL" ? undefined : filter);
+    setCurrentPage(0);
+    fetchOrders(filter === "ALL" ? undefined : filter, 0, PAGE_SIZE).then(data => {
+      if (data) {
+        const totalPages = data.totalPages ?? 1;
+        setHasMore((data.number ?? 0) + 1 < totalPages);
+      }
+    });
   }, [filter, fetchOrders]);
+
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    const nextPage = currentPage + 1;
+    const data = await fetchOrders(filter === "ALL" ? undefined : filter, nextPage, PAGE_SIZE);
+    if (data) {
+      setCurrentPage(nextPage);
+      const totalPages = data.totalPages ?? 1;
+      setHasMore(nextPage + 1 < totalPages);
+    }
+    setLoadingMore(false);
+  };
 
   // Load full order detail (with items) when user selects an order
   useEffect(() => {
@@ -346,6 +380,9 @@ export default function PedidosPage({ store, toast }) {
         onFilterChange={setFilter}
         onNew={() => setShowCreate(true)}
         loading={loading.orders}
+        hasMore={hasMore}
+        onLoadMore={handleLoadMore}
+        loadingMore={loadingMore}
       />
 
       {selectedId && loadingDetail ? (

@@ -124,9 +124,14 @@ export const variantsApi = {
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
 export const ordersApi = {
-  /** GET /orders or GET /orders?status=PENDING|CONFIRMED|... (omit or pass undefined for Todos) */
-  list: (status) =>
-    apiFetch(status ? `/orders?status=${encodeURIComponent(status)}` : "/orders"),
+  /** GET /orders paginated. Returns Spring Page { content, totalElements, totalPages, number, size }. */
+  list: (status, page = 0, size = 30) => {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    params.set("page", String(page));
+    params.set("size", String(size));
+    return apiFetch(`/orders?${params.toString()}`);
+  },
 
   /** GET /orders/{id} */
   get: (id) => apiFetch(`/orders/${id}`),
