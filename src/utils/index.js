@@ -1,7 +1,10 @@
 // ─── FORMATTING ───────────────────────────────────────────────────────────────
 
-export const fmtCurrency = (n) =>
-  `RD$${Number(n).toLocaleString("es-DO", { minimumFractionDigits: 2 })}`;
+export const fmtCurrency = (n) => {
+  const num = Number(n);
+  const safe = typeof num === "number" && !Number.isNaN(num) ? num : 0;
+  return `RD$${safe.toLocaleString("es-DO", { minimumFractionDigits: 2 })}`;
+};
 
 export const nowString = () =>
   new Date().toLocaleString("es-DO", { hour12: false });
