@@ -143,7 +143,7 @@ export default function CreateOrderModal({ store, onClose, toast, onCreated }) {
         <div style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>Resumen del pedido</div>
           {items.map((item, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, marginBottom: 8 }}>
+            <div key={item.variantId ?? i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, marginBottom: 8 }}>
               <div>
                 <span style={{ fontWeight: 600, fontSize: 13 }}>{item.productName}</span>
                 <span style={{ color: "#9CA3AF", fontSize: 12 }}> · {item.variant} × {item.quantity}</span>

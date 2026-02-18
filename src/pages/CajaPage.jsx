@@ -265,7 +265,7 @@ function DirectSalePanel({ products, getAvailable, onSell, loadingProducts }) {
           <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 10, textTransform: "uppercase" }}>Lista de Compras</div>
           {saleList.length === 0 && <div style={{ color: "#C4C4C4", fontSize: 13, textAlign: "center", padding: "12px 0" }}>Sin artículos</div>}
           {saleList.map((item, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid #F0F0F0", animation: "listItemIn 0.2s ease-out forwards", animationDelay: `${i * 40}ms`, opacity: 0 }}>
+            <div key={item.variantId ?? i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid #F0F0F0", animation: "listItemIn 0.2s ease-out forwards", animationDelay: `${i * 40}ms`, opacity: 0 }}>
               <div style={{ fontSize: 13 }}>
                 <span style={{ fontWeight: 600 }}>{item.productName}</span>
                 <span style={{ color: "#9CA3AF" }}> {item.variant} ×{item.quantity}</span>

@@ -237,7 +237,7 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
           </thead>
           <tbody>
             {norm.items.map((item, i) => (
-              <tr key={i} style={{ borderTop: "1px solid #F0F0F0" }}>
+              <tr key={item.id ?? item.variantId ?? i} style={{ borderTop: "1px solid #F0F0F0" }}>
                 <td style={{ padding: "10px 16px", fontSize: 14, fontWeight: 600 }}>{item.productName}</td>
                 <td style={{ padding: "10px 16px", fontSize: 13, color: "#6B7280" }}>{item.variant}</td>
                 <td style={{ padding: "10px 16px", fontSize: 14 }}>{item.quantity}</td>
@@ -289,7 +289,7 @@ export default function PedidosPage({ store, toast }) {
   // Load orders on mount and when filter changes
   useEffect(() => {
     fetchOrders(filter === "ALL" ? undefined : filter);
-  }, [filter]);
+  }, [filter, fetchOrders]);
 
   const selectedOrder = orders.find(o => o.id === selectedId);
 
@@ -303,12 +303,12 @@ export default function PedidosPage({ store, toast }) {
     }
   };
 
-  const handleUpdateAddress = async (orderId, address) => {
+  const handleUpdateAddress = async (orderId, address, city) => {
     try {
-      await updateOrderAddress(orderId, address);
+      await updateOrderAddress(orderId, address, city);
       toast("✅ Dirección actualizada");
     } catch (e) {
-      toast(`❌ ${e.message}`);
+      toast(`❌ ${e?.message || "Error al actualizar dirección"}`);
     }
   };
 

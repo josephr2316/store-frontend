@@ -13,7 +13,7 @@ export default function OrderHistoryModal({ orderId, onClose }) {
     setLoading(true);
     ordersApi.history(orderId)
       .then(data => setHistory(Array.isArray(data) ? data : []))
-      .catch(() => setHistory([]))
+      .catch(e => { console.error("History error:", e); setHistory([]); })
       .finally(() => setLoading(false));
   }, [orderId]);
 
@@ -37,7 +37,7 @@ export default function OrderHistoryModal({ orderId, onClose }) {
             const note   = h.note ?? h.reason ?? h.comment ?? "";
             const by     = h.by ?? h.changedBy ?? h.user ?? "Sistema";
             return (
-              <div key={i} style={{ display: "flex", gap: 12, marginBottom: i < history.length - 1 ? 16 : 0, animation: "listItemIn 0.22s ease-out forwards", animationDelay: `${i * 50}ms`, opacity: 0 }}>
+              <div key={h.id ?? h.changedAt ?? i} style={{ display: "flex", gap: 12, marginBottom: i < history.length - 1 ? 16 : 0, animation: "listItemIn 0.22s ease-out forwards", animationDelay: `${i * 50}ms`, opacity: 0 }}>
                 <div
                   style={{
                     width: 8, height: 8, borderRadius: "50%",
