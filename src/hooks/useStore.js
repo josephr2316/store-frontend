@@ -132,6 +132,14 @@ export function useStore() {
     finally { endLoad("orders"); }
   }, []);
 
+  const fetchOrderById = useCallback(async (id) => {
+    try {
+      return await ordersApi.get(id);
+    } catch {
+      return null;
+    }
+  }, []);
+
   const createOrder = useCallback(async (body) => {
     const order = await ordersApi.create(body);
     await fetchOrders();
@@ -161,6 +169,6 @@ export function useStore() {
     // Inventory
     fetchBalances, adjustStock, getBalance, getAvailable,
     // Orders
-    fetchOrders, createOrder, transitionOrder, updateOrderAddress,
+    fetchOrders, fetchOrderById, createOrder, transitionOrder, updateOrderAddress,
   };
 }

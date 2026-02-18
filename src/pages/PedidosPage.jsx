@@ -279,26 +279,44 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
 export default function PedidosPage({ store, toast }) {
-  const { orders, loading, fetchOrders, transitionOrder, updateOrderAddress } = store;
-  const [selectedId,  setSelectedId]  = useState(null);
-  const [filter,      setFilter]      = useState("ALL");
-  const [showCreate,  setShowCreate]  = useState(false);
-  const [whatsAppId,  setWhatsAppId]  = useState(null);
-  const [historyId,   setHistoryId]   = useState(null);
+  const { orders, loading, fetchOrders, fetchOrderById, transitionOrder, updateOrderAddress } = store;
+  const [selectedId,     setSelectedId]     = useState(null);
+  const [selectedDetail, setSelectedDetail] = useState(null);
+  const [loadingDetail,  setLoadingDetail]  = useState(false);
+  const [filter,         setFilter]         = useState("ALL");
+  const [showCreate,     setShowCreate]     = useState(false);
+  const [whatsAppId,     setWhatsAppId]     = useState(null);
+  const [historyId,      setHistoryId]      = useState(null);
 
-  // Load orders on mount and when filter changes
+  // Load orders list on mount and when filter changes
   useEffect(() => {
     fetchOrders(filter === "ALL" ? undefined : filter);
   }, [filter, fetchOrders]);
 
-  const selectedOrder = orders.find(o => o.id === selectedId);
+  // Load full order detail (with items) when user selects an order
+  useEffect(() => {
+    if (!selectedId) { setSelectedDetail(null); return; }
+    setLoadingDetail(true);
+    fetchOrderById(selectedId)
+      .then(d => setSelectedDetail(d || orders.find(o => o.id === selectedId) || null))
+      .finally(() => setLoadingDetail(false));
+  }, [selectedId]);  // eslint-disable-line
+
+  // After a mutation, refresh the detail too
+  const refreshDetail = async (id) => {
+    const d = await fetchOrderById(id);
+    if (d) setSelectedDetail(d);
+  };
+
+  const selectedOrder = selectedDetail ?? orders.find(o => o.id === selectedId) ?? null;
 
   const handleTransition = async (orderId, newState, note) => {
     try {
       await transitionOrder(orderId, newState, note);
       toast(`✅ Estado actualizado: ${TRANSITION_LABELS[newState] || newState}`);
+      await refreshDetail(orderId);
     } catch (e) {
-      toast(`❌ ${e.message}`);
+      toast(`❌ ${e?.message || "Error al cambiar estado"}`);
       throw e;
     }
   };
@@ -307,6 +325,7 @@ export default function PedidosPage({ store, toast }) {
     try {
       await updateOrderAddress(orderId, address, city);
       toast("✅ Dirección actualizada");
+      await refreshDetail(orderId);
     } catch (e) {
       toast(`❌ ${e?.message || "Error al actualizar dirección"}`);
     }
@@ -324,7 +343,12 @@ export default function PedidosPage({ store, toast }) {
         loading={loading.orders}
       />
 
-      {selectedOrder ? (
+      {selectedId && loadingDetail ? (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#F8FAFC", flexDirection: "column", gap: 12 }}>
+          <span style={{ width: 32, height: 32, border: "3px solid #E2E8F0", borderTopColor: "#6366F1", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+          <span style={{ color: "#94A3B8", fontSize: 14 }}>Cargando pedido…</span>
+        </div>
+      ) : selectedOrder ? (
         <OrderDetail
           order={selectedOrder}
           onTransition={handleTransition}
