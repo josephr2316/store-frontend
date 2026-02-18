@@ -57,6 +57,11 @@ const TRANSITION_LABELS = {
 
 // ─── ORDER LIST ───────────────────────────────────────────────────────────────
 
+const FILTER_LABELS = {
+  ALL: "Todos", PENDING: "Pendiente", CONFIRMED: "Confirmado",
+  PREPARING: "Preparando", SHIPPED: "Enviado", DELIVERED: "Entregado", CANCELLED: "Cancelado",
+};
+
 function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, loading }) {
   const FILTERS = ["ALL","PENDING","CONFIRMED","PREPARING","SHIPPED","DELIVERED","CANCELLED"];
   return (
@@ -68,7 +73,7 @@ function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, 
         </div>
         <select value={filter} onChange={e => onFilterChange(e.target.value)}
           style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 10, padding: "8px 12px", fontSize: 13, fontFamily: "inherit", background: "#F8FAFC" }}>
-          {FILTERS.map(f => <option key={f} value={f}>{f === "ALL" ? "Todos" : f}</option>)}
+          {FILTERS.map(f => <option key={f} value={f}>{FILTER_LABELS[f] ?? f}</option>)}
         </select>
       </div>
       <div style={{ flex: 1, overflowY: "auto" }}>

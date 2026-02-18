@@ -88,7 +88,7 @@ export default function CreateOrderModal({ store, onClose, toast, onCreated }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
         <Select label="Canal" value={channel} onChange={e => setChannel(e.target.value)}>
-          {["WHATSAPP","INSTAGRAM","SHOPIFY","DIRECT"].map(c => <option key={c}>{c}</option>)}
+          {[["WHATSAPP","WhatsApp"],["INSTAGRAM","Instagram"],["SHOPIFY","Shopify"],["DIRECT","Directo"],["OTHER","Otro"]].map(([val,lbl]) => <option key={val} value={val}>{lbl}</option>)}
         </Select>
         <Input label="Notas" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Instrucciones especiales..." />
       </div>
