@@ -561,15 +561,32 @@ export default function ReportesPage({ store }) {
       <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "20px 24px", marginBottom: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Escala:</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => { setDateDesde(defaultDesde); setDateHasta(today); }} style={{ border: "1px solid " + COLORS.primary, background: "#F0F9FF", color: COLORS.primaryDark, borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>1 año</button>
-            <button type="button" onClick={() => setRangePreset(365)} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "8px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#475569" }}>Ver todo</button>
-            <button type="button" onClick={() => setRangePreset(90)} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "8px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#475569" }}>3M</button>
-            <button type="button" onClick={() => setRangePreset(30)} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "8px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#475569" }}>1M</button>
-            <button type="button" onClick={() => setRangePreset(15)} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "8px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#475569" }}>15d</button>
-            <button type="button" onClick={() => setRangePreset(6)} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "8px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#475569" }}>7d</button>
-            <button type="button" onClick={() => { const d = new Date(); d.setDate(d.getDate() - 1); const y = d.toISOString().slice(0, 10); setDateDesde(y); setDateHasta(y); }} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "8px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#475569" }}>Ayer</button>
-          </div>
+          {(() => {
+            const btnBase = { borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" };
+            const btnDefault = { ...btnBase, border: "1px solid #E5E7EB", background: "#fff", color: "#475569" };
+            const presets = [
+              { label: "1 día",   action: () => { setDateDesde(today); setDateHasta(today); } },
+              { label: "7 días",  action: () => setRangePreset(7) },
+              { label: "15 días", action: () => setRangePreset(15) },
+              { label: "1 mes",   action: () => setRangePreset(30) },
+              { label: "3 meses", action: () => setRangePreset(90) },
+              { label: "6 meses", action: () => setRangePreset(180) },
+              { label: "9 meses", action: () => setRangePreset(270) },
+              { label: "1 año",   action: () => { setDateDesde(defaultDesde); setDateHasta(today); }, active: true },
+            ];
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                {presets.map(p => (
+                  <button key={p.label} type="button" onClick={p.action}
+                    style={p.active
+                      ? { ...btnBase, border: "1.5px solid " + COLORS.primary, background: "#EFF6FF", color: COLORS.primaryDark }
+                      : btnDefault}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
           <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginLeft: 4 }}>Desde</label>
           <input type="date" value={dateDesde || defaultDesde} onChange={e => setDateDesde(e.target.value)}
             style={{ border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontFamily: "inherit" }} />
