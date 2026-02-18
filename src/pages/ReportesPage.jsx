@@ -429,6 +429,7 @@ export default function ReportesPage({ store }) {
   const defaultDesde = lastYearFrom(today);
   const [dateDesde, setDateDesde] = useState(defaultDesde);
   const [dateHasta, setDateHasta] = useState(today);
+  const [activePreset, setActivePreset] = useState("1 año");
   const [salesInRange, setSalesInRange] = useState(null);
   const [topProductsPaged, setTopProductsPaged] = useState(null);
   const [page, setPage] = useState(0);
@@ -508,12 +509,13 @@ export default function ReportesPage({ store }) {
     { label: "Pedidos en Sistema", value: safeDisplay(totalOrdersInSystem), sub: "Total registrados", color: COLORS.success },
   ];
 
-  const setRangePreset = (days) => {
+  const setRangePreset = (days, label) => {
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - days);
     setDateDesde(start.toISOString().slice(0, 10));
     setDateHasta(end.toISOString().slice(0, 10));
+    if (label) setActivePreset(label);
   };
 
   const exportToExcel = () => {
@@ -562,36 +564,38 @@ export default function ReportesPage({ store }) {
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Escala:</span>
           {(() => {
-            const btnBase = { borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" };
-            const btnDefault = { ...btnBase, border: "1px solid #E5E7EB", background: "#fff", color: "#475569" };
+            const btnBase = { borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", outline: "none" };
             const presets = [
-              { label: "1 día",   action: () => { setDateDesde(today); setDateHasta(today); } },
-              { label: "7 días",  action: () => setRangePreset(7) },
-              { label: "15 días", action: () => setRangePreset(15) },
-              { label: "1 mes",   action: () => setRangePreset(30) },
-              { label: "3 meses", action: () => setRangePreset(90) },
-              { label: "6 meses", action: () => setRangePreset(180) },
-              { label: "9 meses", action: () => setRangePreset(270) },
-              { label: "1 año",   action: () => { setDateDesde(defaultDesde); setDateHasta(today); }, active: true },
+              { label: "1 día",   onClick: () => { setDateDesde(today); setDateHasta(today); setActivePreset("1 día"); } },
+              { label: "7 días",  onClick: () => setRangePreset(7,  "7 días")  },
+              { label: "15 días", onClick: () => setRangePreset(15, "15 días") },
+              { label: "1 mes",   onClick: () => setRangePreset(30, "1 mes")   },
+              { label: "3 meses", onClick: () => setRangePreset(90, "3 meses") },
+              { label: "6 meses", onClick: () => setRangePreset(180,"6 meses") },
+              { label: "9 meses", onClick: () => setRangePreset(270,"9 meses") },
+              { label: "1 año",   onClick: () => { setDateDesde(defaultDesde); setDateHasta(today); setActivePreset("1 año"); } },
             ];
             return (
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                {presets.map(p => (
-                  <button key={p.label} type="button" onClick={p.action}
-                    style={p.active
-                      ? { ...btnBase, border: "1.5px solid " + COLORS.primary, background: "#EFF6FF", color: COLORS.primaryDark }
-                      : btnDefault}>
-                    {p.label}
-                  </button>
-                ))}
+                {presets.map(p => {
+                  const isActive = activePreset === p.label;
+                  return (
+                    <button key={p.label} type="button" onClick={p.onClick}
+                      style={isActive
+                        ? { ...btnBase, border: "1.5px solid " + COLORS.primary, background: "#EFF6FF", color: COLORS.primaryDark, boxShadow: "0 0 0 3px rgba(14,165,233,0.15)" }
+                        : { ...btnBase, border: "1px solid #E2E8F0", background: "#fff", color: "#475569" }}>
+                      {p.label}
+                    </button>
+                  );
+                })}
               </div>
             );
           })()}
           <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginLeft: 4 }}>Desde</label>
-          <input type="date" value={dateDesde || defaultDesde} onChange={e => setDateDesde(e.target.value)}
+          <input type="date" value={dateDesde || defaultDesde} onChange={e => { setDateDesde(e.target.value); setActivePreset(null); }}
             style={{ border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontFamily: "inherit" }} />
           <label style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Hasta</label>
-          <input type="date" value={dateHasta || today} onChange={e => setDateHasta(e.target.value)}
+          <input type="date" value={dateHasta || today} onChange={e => { setDateHasta(e.target.value); setActivePreset(null); }}
             style={{ border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontFamily: "inherit" }} />
           <span style={{ fontSize: 12, color: "#94A3B8" }}>{desdeDisplay} → {hastaDisplay}</span>
           <button onClick={fetchReports} disabled={loadingRep}
