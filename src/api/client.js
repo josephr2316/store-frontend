@@ -1,9 +1,11 @@
 // ─── API CLIENT ───────────────────────────────────────────────────────────────
 // Central HTTP layer. All calls go through here.
 // Automatically attaches JWT Bearer token and handles 401 logout.
-// Para desarrollo local: crea .env con VITE_API_URL=http://localhost:8080
+// URL del backend: VITE_API_URL (en Vercel debe ser la URL pública de Railway).
 
-const BASE_URL = import.meta.env.VITE_API_URL || "https://store-production-3316.up.railway.app";
+import { API_BASE } from "../constants/index.js";
+
+const BASE_URL = API_BASE;
 
 // Token storage (in-memory + sessionStorage for page refresh survival)
 let _token = sessionStorage.getItem("jwt_token") || null;

@@ -45,5 +45,8 @@ export const STATE_COLORS = {
 
 export const CHANNELS = ["WHATSAPP", "INSTAGRAM", "SHOPIFY", "DIRECT"];
 
-// ─── API BASE URL ──────────────────────────────────────────────────────────────
-export const API_BASE = "https://store-production-3316.up.railway.app";
+// ─── API BASE URL (backend en Railway) ─────────────────────────────────────────
+// En Vercel: Settings → Environment Variables → VITE_API_URL = URL pública de Railway (con https://)
+export const API_BASE = typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL
+  ? import.meta.env.VITE_API_URL
+  : "https://store-production-3316.up.railway.app";
