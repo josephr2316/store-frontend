@@ -143,8 +143,11 @@ export function useStore() {
     await fetchOrders();
   }, [fetchOrders]);
 
-  const updateOrderAddress = useCallback(async (orderId, address) => {
-    await ordersApi.updateAddress(orderId, { shippingAddress: address });
+  const updateOrderAddress = useCallback(async (orderId, address, city) => {
+    await ordersApi.updateAddress(orderId, {
+      shippingAddress: address,
+      ...(city ? { shippingCity: city } : {}),
+    });
     await fetchOrders();
   }, [fetchOrders]);
 

@@ -133,6 +133,7 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
   const [noteInput,    setNoteInput]    = useState("");
   const [editingAddr,  setEditingAddr]  = useState(false);
   const [newAddr,      setNewAddr]      = useState("");
+  const [newCity,      setNewCity]      = useState("");
   const [confirmTrans, setConfirmTrans] = useState(null);
   const [transNote,    setTransNote]    = useState("");
   const [saving,       setSaving]       = useState(false);
@@ -151,7 +152,7 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
 
   const saveAddr = async () => {
     setSaving(true);
-    try { await onUpdateAddress(order.id, newAddr); setEditingAddr(false); }
+    try { await onUpdateAddress(order.id, newAddr, newCity); setEditingAddr(false); }
     finally { setSaving(false); }
   };
 
@@ -189,25 +190,29 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
           <div style={{ fontWeight: 700, fontSize: 15 }}>{norm.clientName}</div>
           <div style={{ color: "#6B7280", fontSize: 13 }}>📱 {norm.clientPhone}</div>
           {editingAddr ? (
-            <div style={{ marginTop: 8 }}>
-              <input value={newAddr} onChange={e => setNewAddr(e.target.value)} placeholder="Nueva dirección"
+            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+              <input value={newAddr} onChange={e => setNewAddr(e.target.value)} placeholder="Dirección (calle, número)"
                 style={{ width: "100%", border: "1.5px solid #C7D2FE", borderRadius: 6, padding: "6px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit" }} />
-              <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                <Btn size="sm" onClick={saveAddr} disabled={saving}>Guardar</Btn>
+              <input value={newCity} onChange={e => setNewCity(e.target.value)} placeholder="Ciudad / Municipio"
+                style={{ width: "100%", border: "1.5px solid #C7D2FE", borderRadius: 6, padding: "6px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit" }} />
+              <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+                <Btn size="sm" onClick={saveAddr} disabled={saving || !newAddr.trim()}>Guardar</Btn>
                 <Btn size="sm" variant="secondary" onClick={() => setEditingAddr(false)}>Cancelar</Btn>
               </div>
             </div>
           ) : (
-            <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 13, color: norm.clientAddress ? "#374151" : "#DC2626" }}>
-                📍 {norm.clientAddress || "Sin dirección ⚠️"}
-              </span>
-              {norm.state !== "SHIPPED" && norm.state !== "DELIVERED" && (
-                <button onClick={() => { setNewAddr(norm.clientAddress || ""); setEditingAddr(true); }}
-                  style={{ border: "none", background: "none", color: "#6366F1", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
-                  Editar
-                </button>
-              )}
+            <div style={{ marginTop: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 13, color: norm.clientAddress ? "#374151" : "#DC2626" }}>
+                  📍 {norm.clientAddress || "Sin dirección ⚠️"}
+                </span>
+                {norm.state !== "SHIPPED" && norm.state !== "DELIVERED" && (
+                  <button onClick={() => { setNewAddr(order.shippingAddress || ""); setNewCity(order.shippingCity || ""); setEditingAddr(true); }}
+                    style={{ border: "none", background: "none", color: "#6366F1", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
+                    Editar
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

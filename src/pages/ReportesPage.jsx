@@ -145,7 +145,7 @@ function DayChart({ rangeData, loading, from, to }) {
   );
 }
 
-/** Weekly sales chart. Fixed size; shows at most MAX_WEEKLY_BARS (last N weeks). */
+/** Weekly sales chart. Fixed size; shows at most MAX_WEEKLY_BARS. Y-axis scale and visible zero bars. */
 function RangeChart({ rangeData, loading, from, to }) {
   const apiWeeks = rangeData?.byWeek || [];
   const fallbackWeeks = from && to ? weeksBetween(from, to) : [];
@@ -159,12 +159,14 @@ function RangeChart({ rangeData, loading, from, to }) {
   const bars = allBars.length > MAX_WEEKLY_BARS ? allBars.slice(-MAX_WEEKLY_BARS) : allBars;
   const totalAmount = safeNum(rangeData?.totalAmount) || allBars.reduce((s, b) => s + b.amount, 0);
   const totalOrders = safeNum(rangeData?.totalOrders) || allBars.reduce((s, b) => s + b.count, 0);
-  const max = Math.max(...bars.map(b => b.amount), 1);
+  const maxAmount = Math.max(...bars.map(b => b.amount), 1);
   const hasBars = bars.length > 0;
   const barWidth = hasBars ? Math.max(12, CHART_VIEWPORT_WIDTH / bars.length - 2) : 16;
+  const chartAreaHeight = CHART_HEIGHT - 48;
+  const zeroBarHeight = 10;
 
   return (
-    <div style={{ ...CARD_STYLE, padding: 24, minHeight: 320, maxWidth: CHART_VIEWPORT_WIDTH + 48 }}>
+    <div style={{ ...CARD_STYLE, padding: 24, minHeight: 320, maxWidth: CHART_VIEWPORT_WIDTH + 80 }}>
       <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4, color: "#0F172A" }}>Ventas por semana</div>
       {from && to && (
         <div style={{ fontSize: 12, color: "#64748B", marginBottom: 12 }}>
@@ -180,22 +182,31 @@ function RangeChart({ rangeData, loading, from, to }) {
       ) : !hasBars ? (
         <div style={{ color: "#94A3B8", textAlign: "center", padding: 48, fontSize: 14, background: "#FAF5FF", borderRadius: 10, height: CHART_HEIGHT, display: "flex", alignItems: "center", justifyContent: "center" }}>Sin datos en este rango. Usa 1 mes o Último año.</div>
       ) : (
-        <div style={{ width: "100%", maxWidth: CHART_VIEWPORT_WIDTH, height: CHART_HEIGHT }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: CHART_HEIGHT - 32 }}>
-            {bars.map((bar, i) => {
-              const amt = safeNum(bar.amount);
-              const count = safeNum(bar.count);
-              const h = Math.max(6, (amt / max) * (CHART_HEIGHT - 56));
-              const displayVal = amt > 0 ? fmtCurrency(amt).replace("RD$", "").trim() : "";
-              return (
-                <div key={bar.key ?? i} style={{ flex: `0 0 ${barWidth}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, color: amt > 0 ? COLORS.accent : "#94A3B8" }}>{displayVal}</div>
-                  <div style={{ width: Math.max(10, barWidth - 2), background: amt > 0 ? `linear-gradient(180deg, ${COLORS.accent} 0%, #6D28D9 100%)` : "#E2E8F0", borderRadius: "4px 4px 0 0", height: h, minHeight: 6 }} />
-                  {count > 0 && <div style={{ fontSize: 8, color: "#64748B" }}>{count} ped.</div>}
-                  <div style={{ fontSize: 8, color: "#64748B", transform: "rotate(-45deg)", whiteSpace: "nowrap" }}>{bar.label || "—"}</div>
-                </div>
-              );
-            })}
+        <div style={{ display: "flex", alignItems: "stretch", width: "100%", maxWidth: CHART_VIEWPORT_WIDTH + 48 }}>
+          {/* Y-axis: scale 0 and max */}
+          <div style={{ width: 48, flexShrink: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", fontSize: 10, color: "#64748B", paddingRight: 8 }}>
+            <span style={{ fontWeight: 600, color: "#0F172A" }}>{maxAmount > 0 ? fmtCurrency(maxAmount).replace("RD$", "").trim() : "0"}</span>
+            <span style={{ fontWeight: 600 }}>0</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: chartAreaHeight }}>
+              {bars.map((bar, i) => {
+                const amt = safeNum(bar.amount);
+                const count = safeNum(bar.count);
+                const barHeight = amt > 0
+                  ? Math.max(zeroBarHeight, (amt / maxAmount) * (chartAreaHeight - 24))
+                  : zeroBarHeight;
+                const displayVal = amt > 0 ? fmtCurrency(amt).replace("RD$", "").trim() : "0";
+                return (
+                  <div key={bar.key ?? i} style={{ flex: `0 0 ${barWidth}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <div style={{ fontSize: 9, fontWeight: 600, color: amt > 0 ? COLORS.accent : "#94A3B8" }}>{displayVal}</div>
+                    <div style={{ width: Math.max(10, barWidth - 2), background: amt > 0 ? `linear-gradient(180deg, ${COLORS.accent} 0%, #6D28D9 100%)` : "#E2E8F0", borderRadius: "4px 4px 0 0", height: barHeight, minHeight: zeroBarHeight }} />
+                    {count > 0 && <div style={{ fontSize: 8, color: "#64748B" }}>{count} ped.</div>}
+                    <div style={{ fontSize: 8, color: "#64748B", transform: "rotate(-45deg)", whiteSpace: "nowrap" }}>{bar.label || "—"}</div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
