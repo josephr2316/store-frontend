@@ -31,7 +31,12 @@ export function useStore() {
         })
       );
       setProducts(withVariants);
-    } catch (e) { setError(e.message); }
+    } catch (e) {
+      const msg = e?.message === "Failed to fetch"
+        ? "No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde."
+        : (e?.message || "Error de conexión");
+      setError(msg);
+    }
     finally { endLoad("products"); }
   }, []);
 
@@ -74,7 +79,12 @@ export function useStore() {
     try {
       const data = await inventoryApi.balances();
       setBalances(data || []);
-    } catch (e) { setError(e.message); }
+    } catch (e) {
+      const msg = e?.message === "Failed to fetch"
+        ? "No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde."
+        : (e?.message || "Error de conexión");
+      setError(msg);
+    }
     finally { endLoad("inventory"); }
   }, []);
 
@@ -107,7 +117,12 @@ export function useStore() {
     try {
       const data = await ordersApi.list(status);
       setOrders(data || []);
-    } catch (e) { setError(e.message); }
+    } catch (e) {
+      const msg = e?.message === "Failed to fetch"
+        ? "No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde."
+        : (e?.message || "Error de conexión");
+      setError(msg);
+    }
     finally { endLoad("orders"); }
   }, []);
 

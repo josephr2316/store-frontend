@@ -38,10 +38,10 @@ function WeeklyChart({ data }) {
         <div style={{ color: "#C4C4C4", textAlign: "center", padding: 40 }}>Sin datos</div>
       ) : (
         <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 180 }}>
-          {normalised.map(([date, val]) => {
+          {normalised.map(([date, val], i) => {
             const h = Math.max(6, (val / max) * 160);
             return (
-              <div key={date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+              <div key={date != null ? String(date) : `idx-${i}`} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#6366F1" }}>
                   {fmtCurrency(val).replace("RD$", "")}
                 </div>

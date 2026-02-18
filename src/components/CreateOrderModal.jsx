@@ -58,7 +58,7 @@ export default function CreateOrderModal({ store, onClose, toast, onCreated }) {
       };
       const order = await createOrder(body);
       toast("✅ Pedido creado");
-      onCreated(order?.id ?? order);
+      onCreated(order?.id ?? order?.orderId ?? order);
     } catch (e) {
       toast(`❌ ${e.message}`);
     } finally {
