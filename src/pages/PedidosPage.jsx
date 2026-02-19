@@ -62,7 +62,7 @@ const FILTER_LABELS = {
   PREPARING: "Preparando", SHIPPED: "Enviado", DELIVERED: "Entregado", CANCELLED: "Cancelado",
 };
 
-function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, loading, hasMore, onLoadMore, loadingMore }) {
+function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, loading, hasMore, onLoadMore, loadingMore, error, onRetry }) {
   const FILTERS = ["ALL","PENDING","CONFIRMED","PREPARING","SHIPPED","DELIVERED","CANCELLED"];
   return (
     <div style={{ width: 360, minWidth: 320, background: "#fff", borderRight: "1px solid #E2E8F0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
@@ -83,7 +83,17 @@ function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, 
             <span style={{ color: "#64748B", fontSize: 13 }}>Cargando pedidos…</span>
           </div>
         )}
-        {!loading && orders.length === 0 && (
+        {!loading && error && (
+          <div style={{ padding: 20, textAlign: "center" }}>
+            <p style={{ color: "#64748B", fontSize: 13, margin: "0 0 12px" }}>{error}</p>
+            {onRetry && (
+              <button onClick={onRetry} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#6366F1", background: "#EEF2FF", border: "1px solid #C7D2FE", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+                Reintentar
+              </button>
+            )}
+          </div>
+        )}
+        {!loading && !error && orders.length === 0 && (
           <div style={{ padding: 32, textAlign: "center", color: "#94A3B8", fontSize: 14 }}>Sin pedidos en este estado</div>
         )}
         {orders.map((o, index) => {
@@ -297,7 +307,7 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
 const PAGE_SIZE = 30;
 
 export default function PedidosPage({ store, toast }) {
-  const { orders, loading, fetchOrders, fetchOrderById, transitionOrder, updateOrderAddress } = store;
+  const { orders, loading, error, setError, fetchOrders, fetchOrderById, transitionOrder, updateOrderAddress } = store;
   const [selectedId,     setSelectedId]     = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
   const [loadingDetail,  setLoadingDetail]  = useState(false);
@@ -312,13 +322,14 @@ export default function PedidosPage({ store, toast }) {
   // Load first page when filter changes
   useEffect(() => {
     setCurrentPage(0);
+    setError(null);
     fetchOrders(filter === "ALL" ? undefined : filter, 0, PAGE_SIZE).then(data => {
       if (data) {
         const totalPages = data.totalPages ?? 1;
         setHasMore((data.number ?? 0) + 1 < totalPages);
       }
     });
-  }, [filter, fetchOrders]);
+  }, [filter, fetchOrders, setError]);
 
   const handleLoadMore = async () => {
     setLoadingMore(true);
@@ -383,6 +394,8 @@ export default function PedidosPage({ store, toast }) {
         hasMore={hasMore}
         onLoadMore={handleLoadMore}
         loadingMore={loadingMore}
+        error={error}
+        onRetry={() => { setError(null); fetchOrders(filter === "ALL" ? undefined : filter, 0, PAGE_SIZE).then(data => { if (data) { setCurrentPage(0); setHasMore((data.number ?? 0) + 1 < (data.totalPages ?? 1)); } }); }}
       />
 
       {selectedId && loadingDetail ? (
