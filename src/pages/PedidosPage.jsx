@@ -153,7 +153,7 @@ function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, 
 
 // ─── ORDER DETAIL ─────────────────────────────────────────────────────────────
 
-function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHistory, loading }) {
+function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHistory, onReloadDetail, loading }) {
   if (!order) return null;
   const norm = normaliseOrder(order);
   const [noteInput,    setNoteInput]    = useState("");
@@ -253,30 +253,45 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
       {/* Items table */}
       <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, marginBottom: 20, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
         <div style={{ padding: "14px 18px", borderBottom: "1px solid #E2E8F0", fontWeight: 600, fontSize: 13, color: "#475569", background: "#F8FAFC" }}>Artículos</div>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "#F8FAFC" }}>
-              {["Producto","Variante","Cant.","Precio","Subtotal"].map(h => (
-                <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6B7280" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {norm.items.map((item, i) => (
-              <tr key={item.id ?? item.variantId ?? i} style={{ borderTop: "1px solid #F0F0F0" }}>
-                <td style={{ padding: "10px 16px", fontSize: 14, fontWeight: 600 }}>{item.productName}</td>
-                <td style={{ padding: "10px 16px", fontSize: 13, color: "#6B7280" }}>{item.variant}</td>
-                <td style={{ padding: "10px 16px", fontSize: 14 }}>{item.quantity}</td>
-                <td style={{ padding: "10px 16px", fontSize: 13, color: "#6B7280" }}>{fmtCurrency(item.price)}</td>
-                <td style={{ padding: "10px 16px", fontSize: 14, fontWeight: 700 }}>{fmtCurrency(item.price * item.quantity)}</td>
+        {norm.items.length === 0 && (Number(norm.total) > 0 || Number(order?.totalAmount) > 0) && onReloadDetail ? (
+          <>
+            <div style={{ padding: 24, textAlign: "center" }}>
+              <p style={{ color: "#64748B", fontSize: 14, margin: "0 0 12px" }}>No se cargaron las líneas del pedido. El total sí está registrado.</p>
+              <button onClick={onReloadDetail} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#6366F1", background: "#EEF2FF", border: "1px solid #C7D2FE", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+                Recargar detalle
+              </button>
+            </div>
+            <div style={{ borderTop: "2px solid #E2E8F0", padding: "10px 16px", background: "#F8FAFC", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 16 }}>
+              <span style={{ fontWeight: 700, color: "#475569" }}>Total</span>
+              <span style={{ fontWeight: 800, color: "#6366F1", fontSize: 16 }}>{fmtCurrency(norm.total)}</span>
+            </div>
+          </>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#F8FAFC" }}>
+                {["Producto","Variante","Cant.","Precio","Subtotal"].map(h => (
+                  <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6B7280" }}>{h}</th>
+                ))}
               </tr>
-            ))}
-            <tr style={{ borderTop: "2px solid #E2E8F0", background: "#F8FAFC" }}>
-              <td colSpan={4} style={{ padding: "10px 16px", fontWeight: 700, textAlign: "right" }}>Total</td>
-              <td style={{ padding: "10px 16px", fontWeight: 800, color: "#6366F1", fontSize: 16 }}>{fmtCurrency(norm.total)}</td>
-            </tr>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {norm.items.map((item, i) => (
+                <tr key={item.id ?? item.variantId ?? i} style={{ borderTop: "1px solid #F0F0F0" }}>
+                  <td style={{ padding: "10px 16px", fontSize: 14, fontWeight: 600 }}>{item.productName}</td>
+                  <td style={{ padding: "10px 16px", fontSize: 13, color: "#6B7280" }}>{item.variant}</td>
+                  <td style={{ padding: "10px 16px", fontSize: 14 }}>{item.quantity}</td>
+                  <td style={{ padding: "10px 16px", fontSize: 13, color: "#6B7280" }}>{fmtCurrency(item.price)}</td>
+                  <td style={{ padding: "10px 16px", fontSize: 14, fontWeight: 700 }}>{fmtCurrency(item.price * item.quantity)}</td>
+                </tr>
+              ))}
+              <tr style={{ borderTop: "2px solid #E2E8F0", background: "#F8FAFC" }}>
+                <td colSpan={4} style={{ padding: "10px 16px", fontWeight: 700, textAlign: "right" }}>Total</td>
+                <td style={{ padding: "10px 16px", fontWeight: 800, color: "#6366F1", fontSize: 16 }}>{fmtCurrency(norm.total)}</td>
+              </tr>
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Transition confirm modal */}
@@ -422,6 +437,7 @@ export default function PedidosPage({ store, toast }) {
           onUpdateAddress={handleUpdateAddress}
           onWhatsApp={setWhatsAppId}
           onHistory={setHistoryId}
+          onReloadDetail={selectedId ? () => loadDetail(selectedId) : undefined}
           loading={loading.orders}
         />
       ) : (
