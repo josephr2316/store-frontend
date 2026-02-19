@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { reportsApi } from "../api/client";
 import { fmtCurrency } from "../utils/index";
+import { theme } from "../theme";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -37,20 +38,23 @@ const COLORS = {
 };
 
 const CARD_STYLE = {
-  background: "#fff",
-  border: "1px solid #E2E8F0",
-  borderRadius: 14,
-  padding: "18px 20px",
+  background: theme.bgCard,
+  border: `1px solid ${theme.border}`,
+  borderRadius: theme.radiusLg,
+  padding: `${theme.space(5)} ${theme.space(6)}`,
   minWidth: 0,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04)",
+  boxShadow: theme.shadowMd,
 };
 
 function StatCard({ label, value, sub, color, delay = 0 }) {
   return (
-    <div style={{ ...CARD_STYLE, animation: "cardIn 0.35s ease-out forwards", animationDelay: `${delay}ms`, opacity: 0 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1.2, letterSpacing: "-0.02em" }}>{safeDisplay(value)}</div>
-      <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 6, lineHeight: 1.4 }}>{sub}</div>
+    <div
+      className="reportes-stat-card"
+      style={{ ...CARD_STYLE, animation: "cardIn 0.35s ease-out forwards", animationDelay: `${delay}ms`, opacity: 0, transition: "box-shadow 0.2s ease" }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: theme.space(2) }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 800, color, lineHeight: 1.2, letterSpacing: "-0.02em" }}>{safeDisplay(value)}</div>
+      <div style={{ fontSize: 12, color: theme.textMuted, marginTop: theme.space(2), lineHeight: 1.4 }}>{sub}</div>
     </div>
   );
 }
@@ -91,10 +95,19 @@ function daysBetween(fromStr, toStr) {
  * - Y-axis scale ticks
  * - Tooltip on hover
  */
-function AreaChart({ points, color, gradientId, totalAmount, totalOrders, from, to, loading, title, emptyMsg, labelEvery }) {
+function AreaChart({ points, color, gradientId, totalAmount, totalOrders, from, to, loading, title, emptyMsg, periodLabel = "Semana" }) {
   const [tooltip, setTooltip] = useState(null);
+  const [chartVisible, setChartVisible] = useState(false);
+  useEffect(() => {
+    if (!loading && points.length > 0) {
+      const t = setTimeout(() => setChartVisible(true), 50);
+      return () => clearTimeout(t);
+    } else {
+      setChartVisible(false);
+    }
+  }, [loading, points.length]);
 
-  const W = 680, H = 200, PAD_L = 56, PAD_R = 12, PAD_T = 16, PAD_B = 32;
+  const W = 700, H = 220, PAD_L = 58, PAD_R = 24, PAD_T = 20, PAD_B = 40;
   const plotW = W - PAD_L - PAD_R;
   const plotH = H - PAD_T - PAD_B;
   const n = points.length;
@@ -103,7 +116,7 @@ function AreaChart({ points, color, gradientId, totalAmount, totalOrders, from, 
   // Compute x,y for each point
   const pts = points.map((p, i) => ({
     ...p,
-    x: PAD_L + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW),
+    x: PAD_L + (n <= 1 ? plotW / 2 : (i / Math.max(1, n - 1)) * plotW),
     y: PAD_T + plotH - (p.amount / maxVal) * plotH,
   }));
 
@@ -127,16 +140,15 @@ function AreaChart({ points, color, gradientId, totalAmount, totalOrders, from, 
     val: t * maxVal,
   }));
 
-  // X labels: show only when month changes, or max every labelEvery points
-  const every = labelEvery ?? Math.max(1, Math.ceil(n / 8));
-  const xLabels = pts.filter((p, i) => {
-    if (n <= 8) return true;
-    if (i === 0 || i === n - 1) return true;
-    if (!p.date) return i % every === 0;
-    const d = new Date(p.date);
-    const prev = pts[i - 1]?.date ? new Date(pts[i - 1].date) : null;
-    return prev ? d.getMonth() !== prev.getMonth() : i % every === 0;
-  });
+  // X labels: max 8 evenly spaced to avoid overlap (especially for 1 year / 52 points)
+  const MAX_X_LABELS = 8;
+  const xLabelIndices = n <= MAX_X_LABELS
+    ? [...Array(n)].map((_, i) => i)
+    : [...Array(MAX_X_LABELS)].map((_, k) => (k === MAX_X_LABELS - 1 ? n - 1 : Math.round((k / (MAX_X_LABELS - 1)) * (n - 1))));
+  const xLabels = [...new Set(xLabelIndices)]
+    .sort((a, b) => a - b)
+    .map(i => pts[i])
+    .filter(Boolean);
 
   const fmtXLabel = (dateStr) => {
     if (!dateStr) return "";
@@ -151,12 +163,12 @@ function AreaChart({ points, color, gradientId, totalAmount, totalOrders, from, 
   };
 
   return (
-    <div style={{ ...CARD_STYLE, padding: "20px 20px 16px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4, flexWrap: "wrap", gap: 8 }}>
+    <div style={{ ...CARD_STYLE, padding: "20px 24px 20px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 16, color: "#0F172A" }}>{title}</div>
+          <div style={{ fontWeight: 800, fontSize: 17, color: theme.text, letterSpacing: "-0.02em" }}>{title}</div>
           {from && to && (
-            <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: theme.textMuted, marginTop: theme.space(1) }}>
               {String(from).slice(0,10)} → {String(to).slice(0,10)} ·{" "}
               <strong style={{ color }}>{fmtCurrency(safeNum(totalAmount))}</strong> ·{" "}
               {safeNum(totalOrders)} entregado{safeNum(totalOrders) !== 1 ? "s" : ""}
@@ -164,19 +176,19 @@ function AreaChart({ points, color, gradientId, totalAmount, totalOrders, from, 
           )}
         </div>
         {tooltip && (
-          <div style={{ background: "#0F172A", color: "#fff", borderRadius: 8, padding: "6px 12px", fontSize: 12, lineHeight: 1.5 }}>
-            <div style={{ fontWeight: 700 }}>{fmtCurrency(tooltip.amount)}</div>
-            <div style={{ color: "#94A3B8", fontSize: 11 }}>{tooltip.date}</div>
+          <div style={{ background: "#0F172A", color: "#fff", borderRadius: 8, padding: "8px 14px", fontSize: 12, lineHeight: 1.5 }}>
+            <div style={{ color: theme.textSubtle, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 }}>{periodLabel}{tooltip.date ? ` · ${fmtXLabel(tooltip.date)}` : ""}</div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>{fmtCurrency(tooltip.amount)}</div>
           </div>
         )}
       </div>
       {loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: H, gap: 12, color: "#64748B", fontSize: 14 }}>
-          <span style={{ width: 24, height: 24, border: "2px solid #E5E7EB", borderTopColor: color, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: H, gap: theme.space(3), color: theme.textMuted, fontSize: 14 }}>
+          <span style={{ width: 24, height: 24, border: `2px solid ${theme.border}`, borderTopColor: color, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
           Cargando…
         </div>
       ) : pts.length === 0 ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: H, color: "#94A3B8", fontSize: 14, background: "#F8FAFC", borderRadius: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: H, color: theme.textMuted, fontSize: 14, background: theme.bg, borderRadius: theme.radius }}>
           {emptyMsg || "Sin datos en este rango"}
         </div>
       ) : (
@@ -194,19 +206,20 @@ function AreaChart({ points, color, gradientId, totalAmount, totalOrders, from, 
             <line key={i} x1={PAD_L} y1={t.y} x2={W - PAD_R} y2={t.y}
               stroke="#E2E8F0" strokeWidth={i === yTicks.length - 1 ? 1.5 : 0.8} strokeDasharray={i === yTicks.length - 1 ? "" : "4 3"} />
           ))}
-          {/* Area fill */}
-          {areaPath && <path d={areaPath} fill={`url(#${gradientId})`} />}
-          {/* Line */}
-          {linePath && <path d={linePath} fill="none" stroke={color} strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" />}
-          {/* Y-axis labels */}
+          {/* Area + line with load-in effect */}
+          <g style={{ opacity: chartVisible ? 1 : 0, transition: "opacity 0.4s ease-out" }}>
+            {areaPath && <path d={areaPath} fill={`url(#${gradientId})`} />}
+            {linePath && <path d={linePath} fill="none" stroke={color} strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" />}
+          </g>
+          {/* Y-axis labels — aligned and readable */}
           {yTicks.map((t, i) => (
-            <text key={i} x={PAD_L - 6} y={t.y + 3.5} textAnchor="end" fontSize={9} fill="#94A3B8" fontFamily="inherit">
+            <text key={i} x={PAD_L - 10} y={t.y} textAnchor="end" dominantBaseline="middle" fontSize={10} fontWeight={600} fill="#475569" fontFamily="inherit">
               {fmtYTick(t.val)}
             </text>
           ))}
-          {/* X-axis labels */}
+          {/* X-axis labels — max 8, no overlap */}
           {xLabels.map((p, i) => (
-            <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize={9} fill="#94A3B8" fontFamily="inherit">
+            <text key={i} x={p.x} y={H - 12} textAnchor="middle" dominantBaseline="middle" fontSize={10} fontWeight={600} fill="#475569" fontFamily="inherit">
               {fmtXLabel(p.date)}
             </text>
           ))}
@@ -264,7 +277,7 @@ function DayChart({ rangeData, loading, from, to }) {
       loading={loading}
       title="Ventas por día"
       emptyMsg="Sin datos. Usa 7 días, 1 mes o Último año."
-      labelEvery={Math.max(1, Math.ceil(capped.length / 8))}
+      periodLabel="Día"
     />
   );
 }
@@ -294,7 +307,6 @@ function RangeChart({ rangeData, loading, from, to }) {
       loading={loading}
       title="Ventas por semana"
       emptyMsg="Sin datos. Usa 1 mes o Último año."
-      labelEvery={Math.max(1, Math.ceil(capped.length / 8))}
     />
   );
 }
@@ -363,41 +375,39 @@ function TopProducts({ paged, loading, page, totalPages, totalElements, pageSize
   const start = pageIndex * (safeNum(pageSize) || 10) + 1;
 
   return (
-    <div style={{ ...CARD_STYLE, padding: 24, minHeight: 260 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-        <div style={{ fontWeight: 700, fontSize: 16, color: "#0F172A" }}>Top Productos</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
-          <label style={{ color: "#64748B" }}>Mostrar:</label>
-          <select value={pageSize} onChange={e => onSizeChange?.(Number(e.target.value))} style={{ border: "1px solid #E5E7EB", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
-            {[5, 10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
+    <div style={{ ...CARD_STYLE, padding: theme.space(6), minHeight: 260 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: theme.space(2), marginBottom: theme.space(4) }}>
+        <div style={{ fontWeight: 800, fontSize: 17, color: theme.text, letterSpacing: "-0.02em" }}>Top Productos</div>
+        <div style={{ display: "flex", alignItems: "center", gap: theme.space(2), fontSize: 12 }}>
+          <label style={{ color: theme.textMuted, fontWeight: 600 }}>Mostrar:</label>
+          <select className="reportes-select" value={pageSize} onChange={e => onSizeChange?.(Number(e.target.value))} style={{ border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: "6px 10px", fontSize: 12, fontFamily: theme.fontFamily }}>{[5, 10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}</select>
         </div>
       </div>
       {loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 24, gap: 8, color: "#64748B", fontSize: 13 }}>Cargando...</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: theme.space(6), gap: theme.space(2), color: theme.textMuted, fontSize: 14 }}>Cargando…</div>
       ) : items.length === 0 ? (
-        <div style={{ color: "#64748B", fontSize: 13, padding: 16, background: "#F8FAFC", borderRadius: 10 }}>No hay productos vendidos en el rango. Usa el atajo <strong>Último año</strong> para ver datos del año anterior.</div>
+        <div style={{ color: theme.textMuted, fontSize: 14, padding: theme.space(4), background: theme.bg, borderRadius: theme.radius }}>No hay productos vendidos en el rango. Usa el atajo <strong>Último año</strong> para ver datos del año anterior.</div>
       ) : (
         <>
           {items.map(([name, qty], i) => (
-            <div key={`${name}-${start + i}`} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <span style={{ width: 22, height: 22, borderRadius: "50%", background: i === 0 ? COLORS.primary : i === 1 ? COLORS.accent : COLORS.success, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#fff" }}>{start + i}</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
-                <div style={{ height: 4, background: "#F3F4F6", borderRadius: 4, marginTop: 3 }}>
-                  <div style={{ height: "100%", borderRadius: 4, background: COLORS.primary, width: `${(qty / maxQty) * 100}%` }} />
+            <div key={`${name}-${start + i}`} className="top-products-row" style={{ display: "flex", alignItems: "center", gap: theme.space(2), marginBottom: theme.space(2), padding: theme.space(1), borderRadius: theme.radius, transition: "background 0.15s ease" }}>
+              <span style={{ width: 24, height: 24, borderRadius: "50%", background: i === 0 ? COLORS.primary : i === 1 ? COLORS.accent : theme.success, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{start + i}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: theme.text }}>{name}</div>
+                <div style={{ height: 5, background: theme.borderLight, borderRadius: theme.radiusSm, marginTop: 4 }}>
+                  <div style={{ height: "100%", borderRadius: theme.radiusSm, background: theme.primary, width: `${(qty / maxQty) * 100}%`, transition: "width 0.3s ease" }} />
                 </div>
               </div>
-              <span style={{ fontWeight: 700, fontSize: 14, color: "#374151" }}>{qty}</span>
+              <span style={{ fontWeight: 700, fontSize: 14, color: theme.text, flexShrink: 0 }}>{qty}</span>
             </div>
           ))}
           {totalPages > 1 && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: "1px solid #E2E8F0", fontSize: 12, color: "#64748B" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: theme.space(3), paddingTop: theme.space(3), borderTop: `1px solid ${theme.border}`, fontSize: 12, color: theme.textMuted }}>
               <span>{safeDisplay(totalElements)} producto{safeNum(totalElements) !== 1 ? "s" : ""} en total</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button type="button" onClick={() => onPageChange?.(pageIndex - 1)} disabled={pageIndex <= 0} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 6, padding: "4px 10px", cursor: pageIndex <= 0 ? "not-allowed" : "pointer", opacity: pageIndex <= 0 ? 0.6 : 1 }}>Anterior</button>
+              <div style={{ display: "flex", alignItems: "center", gap: theme.space(2) }}>
+                <button type="button" className="reportes-pagination-btn" onClick={() => onPageChange?.(pageIndex - 1)} disabled={pageIndex <= 0} style={{ border: `1px solid ${theme.border}`, background: theme.bgCard, borderRadius: theme.radiusSm, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: pageIndex <= 0 ? "not-allowed" : "pointer", opacity: pageIndex <= 0 ? 0.6 : 1, transition: "background 0.15s, color 0.15s" }}>Anterior</button>
                 <span>Pág. {pageIndex + 1} de {totalPages}</span>
-                <button type="button" onClick={() => onPageChange?.(pageIndex + 1)} disabled={pageIndex >= totalPages - 1} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 6, padding: "4px 10px", cursor: pageIndex >= totalPages - 1 ? "not-allowed" : "pointer", opacity: pageIndex >= totalPages - 1 ? 0.6 : 1 }}>Siguiente</button>
+                <button type="button" className="reportes-pagination-btn" onClick={() => onPageChange?.(pageIndex + 1)} disabled={pageIndex >= totalPages - 1} style={{ border: `1px solid ${theme.border}`, background: theme.bgCard, borderRadius: theme.radiusSm, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: pageIndex >= totalPages - 1 ? "not-allowed" : "pointer", opacity: pageIndex >= totalPages - 1 ? 0.6 : 1, transition: "background 0.15s, color 0.15s" }}>Siguiente</button>
               </div>
             </div>
           )}
@@ -503,10 +513,10 @@ export default function ReportesPage({ store }) {
   const totalOrdersInSystem = orders.length;
 
   const statCards = [
-    { label: "Pedidos Pendientes", value: safeDisplay(pendingCount), sub: "Requieren atención", color: COLORS.warning },
-    { label: "Ventas en período", value: fmtCurrency(periodRevenue), sub: `Desde ${desdeDisplay} hasta ${hastaDisplay} · ${safeDisplay(periodOrders)} entregados`, color: COLORS.primary },
-    { label: "Variantes Bajo Stock", value: safeDisplay(lowStockCount), sub: "≤ 3 unidades disp.", color: COLORS.danger },
-    { label: "Pedidos en Sistema", value: safeDisplay(totalOrdersInSystem), sub: "Total registrados", color: COLORS.success },
+    { label: "Pedidos Pendientes", value: safeDisplay(pendingCount), sub: "Requieren atención", color: theme.warning },
+    { label: "Ventas en período", value: fmtCurrency(periodRevenue), sub: `Desde ${desdeDisplay} hasta ${hastaDisplay} · ${safeDisplay(periodOrders)} entregados`, color: theme.primary },
+    { label: "Variantes Bajo Stock", value: safeDisplay(lowStockCount), sub: "≤ 3 unidades disp.", color: theme.error },
+    { label: "Pedidos en Sistema", value: safeDisplay(totalOrdersInSystem), sub: "Total registrados", color: theme.success },
   ];
 
   const setRangePreset = (days, label) => {
@@ -552,19 +562,27 @@ export default function ReportesPage({ store }) {
   };
 
   return (
-    <div style={{ padding: "28px 32px", overflowY: "auto", height: "100%", maxWidth: 1440, margin: "0 auto", background: "#EFF6FF" }}>
-      <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: "1px solid #E2E8F0" }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>Reportes</h2>
-        <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748B", maxWidth: 720 }}>
+    <div style={{ padding: `${theme.space(7)} ${theme.space(8)}`, overflowY: "auto", height: "100%", maxWidth: 1440, margin: "0 auto", background: theme.bg, fontFamily: theme.fontFamily }}>
+      <style>{`
+        .reportes-stat-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+        .top-products-row:hover { background: ${theme.bg}; }
+        .low-stock-row:hover { background: ${theme.bg}; }
+        .reportes-pagination-btn:hover:not(:disabled) { background: ${theme.borderLight}; color: ${theme.text}; }
+        .reportes-export-btn:hover:not(:disabled) { background: #059669; box-shadow: 0 2px 8px rgba(16,185,129,0.35); }
+        .reportes-filter-btn:not(.reportes-filter-active):hover { background: ${theme.borderLight}; color: ${theme.text}; }
+      `}</style>
+      <div style={{ marginBottom: theme.space(6), paddingBottom: theme.space(5), borderBottom: `1px solid ${theme.border}` }}>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: theme.text, letterSpacing: "-0.02em" }}>Reportes</h2>
+        <p style={{ margin: `${theme.space(2)} 0 0`, fontSize: 14, color: theme.textMuted, maxWidth: 720, lineHeight: 1.5 }}>
           Ventas por semana y productos top según el rango elegido. Datos desde hace un año hasta hoy. Pedidos pendientes, en sistema y stock bajo reflejan el estado actual.
         </p>
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "20px 24px", marginBottom: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Escala:</span>
+      <div style={{ background: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: theme.radiusMd, padding: `${theme.space(5)} ${theme.space(6)}`, marginBottom: theme.space(6), boxShadow: theme.shadow }}>
+        <div style={{ display: "flex", alignItems: "center", gap: theme.space(3), flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted }}>Escala:</span>
           {(() => {
-            const btnBase = { borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", outline: "none" };
+            const btnBase = { borderRadius: theme.radius, padding: `${theme.space(2)} ${theme.space(3)}`, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", outline: "none" };
             const presets = [
               { label: "1 día",   onClick: () => { setDateDesde(today); setDateHasta(today); setActivePreset("1 día"); } },
               { label: "7 días",  onClick: () => setRangePreset(7,  "7 días")  },
@@ -576,14 +594,14 @@ export default function ReportesPage({ store }) {
               { label: "1 año",   onClick: () => { setDateDesde(defaultDesde); setDateHasta(today); setActivePreset("1 año"); } },
             ];
             return (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: theme.space(1), flexWrap: "wrap" }}>
                 {presets.map(p => {
                   const isActive = activePreset === p.label;
                   return (
-                    <button key={p.label} type="button" onClick={p.onClick}
+                    <button key={p.label} type="button" className={`reportes-filter-btn${isActive ? " reportes-filter-active" : ""}`} onClick={p.onClick}
                       style={isActive
-                        ? { ...btnBase, border: "1.5px solid " + COLORS.primary, background: "#EFF6FF", color: COLORS.primaryDark, boxShadow: "0 0 0 3px rgba(14,165,233,0.15)" }
-                        : { ...btnBase, border: "1px solid #E2E8F0", background: "#fff", color: "#475569" }}>
+                        ? { ...btnBase, border: `2px solid ${theme.primary}`, background: theme.primaryLight, color: theme.primaryHover, boxShadow: `0 0 0 3px ${theme.primaryMuted}40` }
+                        : { ...btnBase, border: `1px solid ${theme.border}`, background: theme.bgCard, color: theme.textMuted }}>
                       {p.label}
                     </button>
                   );
@@ -591,34 +609,34 @@ export default function ReportesPage({ store }) {
               </div>
             );
           })()}
-          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginLeft: 4 }}>Desde</label>
-          <input type="date" value={dateDesde || defaultDesde} onChange={e => { setDateDesde(e.target.value); setActivePreset(null); }}
-            style={{ border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontFamily: "inherit" }} />
-          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Hasta</label>
-          <input type="date" value={dateHasta || today} onChange={e => { setDateHasta(e.target.value); setActivePreset(null); }}
-            style={{ border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontFamily: "inherit" }} />
-          <span style={{ fontSize: 12, color: "#94A3B8" }}>{desdeDisplay} → {hastaDisplay}</span>
+          <label style={{ fontSize: 12, fontWeight: 600, color: theme.textMuted, marginLeft: theme.space(1) }}>Desde</label>
+          <input type="date" className="reportes-date" value={dateDesde || defaultDesde} onChange={e => { setDateDesde(e.target.value); setActivePreset(null); }}
+            style={{ border: `1.5px solid ${theme.border}`, borderRadius: theme.radius, padding: `${theme.space(2)} ${theme.space(3)}`, fontSize: 13, fontFamily: "inherit" }} />
+          <label style={{ fontSize: 12, fontWeight: 600, color: theme.textMuted }}>Hasta</label>
+          <input type="date" className="reportes-date" value={dateHasta || today} onChange={e => { setDateHasta(e.target.value); setActivePreset(null); }}
+            style={{ border: `1.5px solid ${theme.border}`, borderRadius: theme.radius, padding: `${theme.space(2)} ${theme.space(3)}`, fontSize: 13, fontFamily: "inherit" }} />
+          <span style={{ fontSize: 12, color: theme.textSubtle }}>{desdeDisplay} → {hastaDisplay}</span>
           <button onClick={fetchReports} disabled={loadingRep}
-            style={{ marginLeft: "auto", background: COLORS.primary, color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: loadingRep ? "wait" : "pointer", fontFamily: "inherit", minWidth: 100, boxShadow: "0 2px 4px rgba(14,165,233,0.4)" }}>
+            style={{ marginLeft: "auto", background: theme.primary, color: "#fff", border: "none", borderRadius: theme.radius, padding: `${theme.space(2)} ${theme.space(5)}`, fontSize: 13, fontWeight: 600, cursor: loadingRep ? "wait" : "pointer", fontFamily: "inherit", minWidth: 100, boxShadow: theme.shadow, transition: "box-shadow 0.2s" }}>
             {loadingRep ? "Cargando…" : "Actualizar"}
           </button>
-          <button type="button" onClick={exportToExcel} disabled={loadingRep}
-            style={{ background: COLORS.success, color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
-            📥 Exportar Excel
+          <button type="button" className="reportes-export-btn" onClick={exportToExcel} disabled={loadingRep}
+            style={{ background: theme.success, color: "#fff", border: "none", borderRadius: theme.radius, padding: `${theme.space(2)} ${theme.space(4)}`, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, transition: "background 0.2s, box-shadow 0.2s" }}>
+            Exportar Excel
           </button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: theme.space(4), marginBottom: theme.space(6) }}>
         {statCards.map((c, i) => <StatCard key={c.label} {...c} delay={i * 60} />)}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: theme.space(6), alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <DayChart rangeData={salesInRange} loading={loadingRep} from={desde} to={hasta} />
           <RangeChart rangeData={salesInRange} loading={loadingRep} from={desde} to={hasta} />
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: theme.space(4) }}>
           <TopProducts
             paged={topProductsPaged}
             loading={loadingRep}
@@ -631,15 +649,15 @@ export default function ReportesPage({ store }) {
           />
 
           {/* Low stock */}
-          <div style={{ ...CARD_STYLE, padding: 24 }}>
-            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: "#0F172A" }}>⚠️ Stock Bajo</div>
-            <div style={{ fontSize: 11, color: "#64748B", marginBottom: 12 }}>Variantes con ≤ 3 unidades disponibles (stock − reservado)</div>
+          <div style={{ ...CARD_STYLE, padding: theme.space(6) }}>
+            <div style={{ fontWeight: 800, fontSize: 17, marginBottom: theme.space(1), color: theme.text, letterSpacing: "-0.02em" }}>Stock Bajo</div>
+            <div style={{ fontSize: 12, color: theme.textMuted, marginBottom: theme.space(3) }}>Variantes con ≤ 3 unidades disponibles (stock − reservado)</div>
             {balances.filter(b => {
               const stock    = b.stock    ?? b.quantity    ?? 0;
               const reserved = b.reserved ?? b.reservedQty ?? 0;
               return (stock - reserved) <= 3;
             }).length === 0 ? (
-              <div style={{ color: COLORS.success, fontSize: 13, fontWeight: 600 }}>✓ Todo en orden</div>
+              <div style={{ color: theme.success, fontSize: 14, fontWeight: 600 }}>Todo en orden</div>
             ) : (
               balances
                 .filter(b => { const s = safeNum(b.stock ?? b.quantity) - safeNum(b.reserved ?? b.reservedQty); return s <= 3; })
@@ -649,17 +667,17 @@ export default function ReportesPage({ store }) {
                   const avail = Math.max(0, stock - reserved);
                   const label = (b.variantSku || b.variantLabel || b.variant?.label || `Variante ${b.variantId ?? b.id ?? ""}`) || "Variante";
                   const status = avail === 0 ? "Agotado" : "Bajo stock";
-                  const statusColor = avail === 0 ? "#DC2626" : "#D97706";
+                  const statusColor = avail === 0 ? theme.error : theme.warning;
                   return (
-                    <div key={b.variantId ?? b.id ?? `low-${idx}`} style={{ padding: "10px 0", borderBottom: "1px solid #F0F0F0", fontSize: 13 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 4 }}>
-                        <span style={{ fontWeight: 600, color: "#0F172A" }}>{safeDisplay(label)}</span>
+                    <div key={b.variantId ?? b.id ?? `low-${idx}`} className="low-stock-row" style={{ padding: theme.space(2), borderBottom: `1px solid ${theme.border}`, fontSize: 13, transition: "background 0.15s ease" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: theme.space(1) }}>
+                        <span style={{ fontWeight: 600, color: theme.text }}>{safeDisplay(label)}</span>
                         <span style={{ fontWeight: 700, color: statusColor, fontSize: 12 }}>{status}</span>
                       </div>
-                      <div style={{ display: "flex", gap: 12, marginTop: 4, fontSize: 11, color: "#64748B" }}>
+                      <div style={{ display: "flex", gap: theme.space(3), marginTop: theme.space(1), fontSize: 12, color: theme.textMuted }}>
                         <span>Stock: <strong>{safeDisplay(stock)}</strong></span>
                         <span>Reservado: <strong>{safeDisplay(reserved)}</strong></span>
-                        <span>Disponible: <strong style={{ color: avail === 0 ? "#DC2626" : "#0F172A" }}>{safeDisplay(avail)}</strong></span>
+                        <span>Disponible: <strong style={{ color: avail === 0 ? theme.error : theme.text }}>{safeDisplay(avail)}</strong></span>
                       </div>
                     </div>
                   );
