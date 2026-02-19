@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Badge, Modal, Btn, Input, AlertBox } from "../components/UI";
 import CreateOrderModal   from "../components/CreateOrderModal";
 import WhatsAppModal      from "../components/WhatsAppModal";
@@ -27,11 +27,11 @@ function normaliseOrder(o) {
     clientAddress,
     // channel
     channel: o.channel || o.source || "—",
-    // items
+    // items (backend sends variantSku, unitPrice; we normalise for Producto/Variante/Cant./Precio)
     items: (o.items || o.orderItems || []).map(i => ({
       ...i,
       productName: i.productName || i.product?.name  || i.name || "Producto",
-      variant:     i.variant     || i.variantLabel   || [i.size ?? i.talla, i.color].filter(Boolean).join("/") || "—",
+      variant:     i.variant     || i.variantLabel   || i.variantName || i.variantSku || [i.size ?? i.talla, i.color].filter(Boolean).join("/") || "—",
       quantity:    i.quantity    || i.qty            || 0,
       price:       i.price       || i.unitPrice      || i.unit_price || 0,
     })),
@@ -343,22 +343,27 @@ export default function PedidosPage({ store, toast }) {
     setLoadingMore(false);
   };
 
-  // Load full order detail (with items) when user selects an order
+  // Load full order detail (with items) when user selects an order — only API response has items
+  const loadDetail = useCallback((id) => {
+    if (!id) return;
+    setLoadingDetail(true);
+    fetchOrderById(id)
+      .then(d => setSelectedDetail(d || null))
+      .finally(() => setLoadingDetail(false));
+  }, [fetchOrderById]);
+
   useEffect(() => {
     if (!selectedId) { setSelectedDetail(null); return; }
-    setLoadingDetail(true);
-    fetchOrderById(selectedId)
-      .then(d => setSelectedDetail(d || orders.find(o => o.id === selectedId) || null))
-      .finally(() => setLoadingDetail(false));
-  }, [selectedId]);  // eslint-disable-line
+    loadDetail(selectedId);
+  }, [selectedId, loadDetail]);
 
-  // After a mutation, refresh the detail too
   const refreshDetail = async (id) => {
     const d = await fetchOrderById(id);
     if (d) setSelectedDetail(d);
   };
 
-  const selectedOrder = selectedDetail ?? orders.find(o => o.id === selectedId) ?? null;
+  // Use only API detail so items are present; avoid list order (items are empty there)
+  const selectedOrder = selectedDetail;
 
   const handleTransition = async (orderId, newState, note) => {
     try {
@@ -402,6 +407,13 @@ export default function PedidosPage({ store, toast }) {
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#F8FAFC", flexDirection: "column", gap: 12 }}>
           <span style={{ width: 32, height: 32, border: "3px solid #E2E8F0", borderTopColor: "#6366F1", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
           <span style={{ color: "#94A3B8", fontSize: 14 }}>Cargando pedido…</span>
+        </div>
+      ) : selectedId && !selectedOrder ? (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#F8FAFC", flexDirection: "column", gap: 16 }}>
+          <p style={{ color: "#64748B", fontSize: 14, margin: 0 }}>No se pudo cargar el detalle del pedido (productos, variante, etc.).</p>
+          <button onClick={() => loadDetail(selectedId)} style={{ padding: "10px 20px", fontSize: 14, fontWeight: 600, color: "#6366F1", background: "#EEF2FF", border: "1px solid #C7D2FE", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+            Reintentar
+          </button>
         </div>
       ) : selectedOrder ? (
         <OrderDetail
