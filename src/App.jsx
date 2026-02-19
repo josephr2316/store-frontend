@@ -32,6 +32,7 @@ export default function App() {
     store.fetchOrders();
     store.fetchBalances();
     store.fetchProducts();
+    store.fetchPendingCount();
   }, [authed]);
 
   const handleLogin = useCallback(() => setAuthed(true), []);
@@ -54,7 +55,7 @@ export default function App() {
     );
   }
 
-  const pendingCount = store.orders.filter(o => (o.state || o.status) === "PENDING").length;
+  const pendingCount = store.pendingCount ?? 0;
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", background: "#F8FAFC", color: "#0F172A", overflow: "hidden" }}>
@@ -97,7 +98,11 @@ export default function App() {
           <h1 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.02em" }}>{tab}</h1>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             {pendingCount > 0 && (
-              <span style={{ fontSize: 12, color: "#B45309", fontWeight: 600, background: "#FEF3C7", padding: "4px 10px", borderRadius: 8 }}>
+              <span style={{
+                fontSize: 13, color: "#92400E", fontWeight: 700, background: "#FEF3C7",
+                padding: "6px 12px", borderRadius: 10, border: "1px solid #FCD34D",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+              }}>
                 {pendingCount} pendiente{pendingCount !== 1 ? "s" : ""}
               </span>
             )}

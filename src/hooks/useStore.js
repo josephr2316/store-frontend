@@ -12,6 +12,7 @@ export function useStore() {
   const [products, setProducts] = useState([]);
   const [orders,   setOrders]   = useState([]);
   const [balances, setBalances] = useState([]);
+  const [pendingCount, setPendingCount] = useState(0);
   const [loading,  setLoading]  = useState({});
   const [error,    setError]    = useState(null);
 
@@ -148,16 +149,29 @@ export function useStore() {
     }
   }, []);
 
+  /** Fetches total count of PENDING orders from API (for sidebar/header badge). */
+  const fetchPendingCount = useCallback(async () => {
+    try {
+      const data = await ordersApi.list("PENDING", 0, 1);
+      const total = data?.totalElements ?? 0;
+      setPendingCount(Number(total));
+    } catch {
+      setPendingCount(0);
+    }
+  }, []);
+
   const createOrder = useCallback(async (body) => {
     const order = await ordersApi.create(body);
     await fetchOrders();
+    await fetchPendingCount();
     return order;
-  }, [fetchOrders]);
+  }, [fetchOrders, fetchPendingCount]);
 
   const transitionOrder = useCallback(async (orderId, newStatus, note) => {
     await ordersApi.transition(orderId, { toStatus: newStatus, reason: note || "" });
     await fetchOrders();
-  }, [fetchOrders]);
+    await fetchPendingCount();
+  }, [fetchOrders, fetchPendingCount]);
 
   const updateOrderAddress = useCallback(async (orderId, address, city) => {
     await ordersApi.updateAddress(orderId, {
@@ -165,10 +179,11 @@ export function useStore() {
       ...(city ? { shippingCity: city } : {}),
     });
     await fetchOrders();
-  }, [fetchOrders]);
+    await fetchPendingCount();
+  }, [fetchOrders, fetchPendingCount]);
 
   return {
-    products, orders, balances,
+    products, orders, balances, pendingCount,
     loading, error, setError,
     // Products
     fetchProducts, createProduct, updateProduct, deleteProduct,
@@ -177,6 +192,6 @@ export function useStore() {
     // Inventory
     fetchBalances, adjustStock, getBalance, getAvailable,
     // Orders
-    fetchOrders, fetchOrderById, createOrder, transitionOrder, updateOrderAddress,
+    fetchOrders, fetchOrderById, fetchPendingCount, createOrder, transitionOrder, updateOrderAddress,
   };
 }

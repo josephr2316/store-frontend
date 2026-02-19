@@ -49,8 +49,9 @@ export default function Sidebar({ activeTab, onTabChange, pendingCount, onLogout
             {t.label}
             {t.id === "Pedidos" && pendingCount > 0 && (
               <span style={{
-                marginLeft: "auto", background: "#6366F1", color: "#fff", borderRadius: 8,
-                fontSize: 11, fontWeight: 700, padding: "2px 8px", minWidth: 22, textAlign: "center",
+                marginLeft: "auto", background: "#FEF3C7", color: "#92400E", borderRadius: 10,
+                fontSize: 12, fontWeight: 700, padding: "4px 10px", minWidth: 24, textAlign: "center",
+                border: "1px solid #FCD34D", boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
               }}>
                 {pendingCount}
               </span>

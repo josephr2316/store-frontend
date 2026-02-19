@@ -322,7 +322,7 @@ function OrderDetail({ order, onTransition, onUpdateAddress, onWhatsApp, onHisto
 const PAGE_SIZE = 30;
 
 export default function PedidosPage({ store, toast }) {
-  const { orders, loading, error, setError, fetchOrders, fetchOrderById, transitionOrder, updateOrderAddress } = store;
+  const { orders, loading, error, setError, fetchOrders, fetchOrderById, fetchPendingCount, transitionOrder, updateOrderAddress } = store;
   const [selectedId,     setSelectedId]     = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
   const [loadingDetail,  setLoadingDetail]  = useState(false);
@@ -334,7 +334,7 @@ export default function PedidosPage({ store, toast }) {
   const [hasMore,        setHasMore]        = useState(false);
   const [loadingMore,    setLoadingMore]    = useState(false);
 
-  // Load first page when filter changes
+  // Load first page when filter changes; refresh pending count for sidebar/header
   useEffect(() => {
     setCurrentPage(0);
     setError(null);
@@ -343,8 +343,9 @@ export default function PedidosPage({ store, toast }) {
         const totalPages = data.totalPages ?? 1;
         setHasMore((data.number ?? 0) + 1 < totalPages);
       }
+      fetchPendingCount();
     });
-  }, [filter, fetchOrders, setError]);
+  }, [filter, fetchOrders, fetchPendingCount, setError]);
 
   const handleLoadMore = async () => {
     setLoadingMore(true);
