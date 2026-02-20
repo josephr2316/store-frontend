@@ -22,6 +22,7 @@ export const Modal = ({ open, onClose, title, children, width = 520 }) => {
   if (!open) return null;
   return (
     <div
+      className="modal-overlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -33,6 +34,7 @@ export const Modal = ({ open, onClose, title, children, width = 520 }) => {
       }}
     >
       <div
+        className="modal-content"
         onClick={e => e.stopPropagation()}
         style={{
           background: "#fff", borderRadius: 16, width: "100%", maxWidth: width,

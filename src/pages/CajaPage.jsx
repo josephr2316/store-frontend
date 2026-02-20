@@ -385,7 +385,7 @@ export default function CajaPage({ store, toast }) {
           </AlertBox>
         </div>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 24, maxWidth: 1200 }}>
+      <div className="caja-grid" style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 24, maxWidth: 1200 }}>
         <InventoryTable
           products={products}
           balances={balances}

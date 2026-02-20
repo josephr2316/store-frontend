@@ -65,7 +65,7 @@ const FILTER_LABELS = {
 function OrderList({ orders, selected, onSelect, filter, onFilterChange, onNew, loading, hasMore, onLoadMore, loadingMore, error, onRetry }) {
   const FILTERS = ["ALL","PENDING","CONFIRMED","PREPARING","SHIPPED","DELIVERED","CANCELLED"];
   return (
-    <div style={{ width: 360, minWidth: 320, background: "#fff", borderRight: "1px solid #E2E8F0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+    <div className="pedidos-list" style={{ width: 360, minWidth: 320, background: "#fff", borderRight: "1px solid #E2E8F0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
       <div style={{ padding: "16px 16px 14px", borderBottom: "1px solid #E2E8F0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: "#0F172A" }}>Pedidos</span>
@@ -403,7 +403,7 @@ export default function PedidosPage({ store, toast }) {
   };
 
   return (
-    <div style={{ display: "flex", height: "100%", gap: 0 }}>
+    <div className="pedidos-layout" style={{ display: "flex", height: "100%", gap: 0 }}>
       <OrderList
         orders={orders}
         selected={selectedId}

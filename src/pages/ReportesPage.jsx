@@ -579,7 +579,7 @@ export default function ReportesPage({ store }) {
       </div>
 
       <div style={{ background: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: theme.radiusMd, padding: `${theme.space(5)} ${theme.space(6)}`, marginBottom: theme.space(6), boxShadow: theme.shadow }}>
-        <div style={{ display: "flex", alignItems: "center", gap: theme.space(3), flexWrap: "wrap" }}>
+        <div className="reportes-filter-row" style={{ display: "flex", alignItems: "center", gap: theme.space(3), flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted }}>Escala:</span>
           {(() => {
             const btnBase = { borderRadius: theme.radius, padding: `${theme.space(2)} ${theme.space(3)}`, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", outline: "none" };
@@ -631,7 +631,7 @@ export default function ReportesPage({ store }) {
         {statCards.map((c, i) => <StatCard key={c.label} {...c} delay={i * 60} />)}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: theme.space(6), alignItems: "start" }}>
+      <div className="reportes-main-grid" style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: theme.space(6), alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <DayChart rangeData={salesInRange} loading={loadingRep} from={desde} to={hasta} />
           <RangeChart rangeData={salesInRange} loading={loadingRep} from={desde} to={hasta} />

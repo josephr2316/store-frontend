@@ -86,14 +86,14 @@ export default function CreateOrderModal({ store, onClose, toast, onCreated }) {
       <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 12 }}>
         Datos del cliente
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <div className="create-order-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <Input label="Nombre"   value={clientName}    onChange={e => setClientName(e.target.value)}    placeholder="María González" />
         <Input label="Teléfono" value={clientPhone}   onChange={e => setClientPhone(e.target.value)}   placeholder="8091234567" />
       </div>
       <div style={{ marginTop: 14 }}>
         <Input label="Dirección (opcional)" value={clientAddress} onChange={e => setClientAddress(e.target.value)} placeholder="Calle 1, Ciudad" />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
+      <div className="create-order-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
         <Select label="Canal" value={channel} onChange={e => setChannel(e.target.value)}>
           {[["WHATSAPP","WhatsApp"],["INSTAGRAM","Instagram"],["SHOPIFY","Shopify"],["DIRECT","Directo"],["OTHER","Otro"]].map(([val,lbl]) => <option key={val} value={val}>{lbl}</option>)}
         </Select>
@@ -105,7 +105,7 @@ export default function CreateOrderModal({ store, onClose, toast, onCreated }) {
         <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 12 }}>
           Agregar artículo
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 90px 1fr", gap: 12, alignItems: "start" }}>
+        <div className="create-order-add-row" style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 90px 1fr", gap: 12, alignItems: "start" }}>
           <Select label="Producto" value={pid} onChange={e => { setPid(e.target.value); setVid(""); }} wrapperStyle={{ marginBottom: 0 }}>
             <option value="">Seleccionar producto...</option>
             {products.map(p => (
