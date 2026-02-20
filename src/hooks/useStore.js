@@ -93,8 +93,15 @@ export function useStore() {
     finally { endLoad("inventory"); }
   }, []);
 
-  const adjustStock = useCallback(async (variantId, quantity, reason) => {
-    await inventoryApi.adjust({ variantId, quantity, reason });
+  const VALID_ADJUSTMENT_REASONS = ["MANUAL_SALE", "RETURN", "DAMAGED", "COUNT_CORRECTION", "OTHER"];
+  const adjustStock = useCallback(async (variantId, quantityDelta, reason, note) => {
+    const reasonStr = String(reason ?? "").trim();
+    const reasonUpper = reasonStr.toUpperCase().replace(/\s+/g, "_");
+    const validReason = VALID_ADJUSTMENT_REASONS.includes(reasonUpper) ? reasonUpper : "OTHER";
+    const body = { variantId, quantityDelta: Number(quantityDelta), reason: validReason };
+    if (note) body.note = String(note).trim();
+    else if (validReason === "OTHER" && reasonStr) body.note = reasonStr;
+    await inventoryApi.adjust(body);
     await fetchBalances();
     await fetchProducts();
   }, [fetchBalances, fetchProducts]);

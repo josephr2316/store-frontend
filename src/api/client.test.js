@@ -70,7 +70,29 @@ describe("ordersApi", () => {
 describe("inventoryApi", () => {
   it("has balances, balanceByVariant, available, adjust", () => {
     expect(typeof inventoryApi.balances).toBe("function");
+    expect(typeof inventoryApi.balanceByVariant).toBe("function");
+    expect(typeof inventoryApi.available).toBe("function");
     expect(typeof inventoryApi.adjust).toBe("function");
+  });
+  it("adjust sends POST with body containing variantId, quantityDelta, reason", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      text: () => Promise.resolve(JSON.stringify({ id: 1, variantId: 200, quantityDelta: -2, reason: "MANUAL_SALE" })),
+    });
+    await inventoryApi.adjust({
+      variantId: 200,
+      quantityDelta: -2,
+      reason: "MANUAL_SALE",
+    });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining("/inventory/adjustments"),
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ variantId: 200, quantityDelta: -2, reason: "MANUAL_SALE" }),
+      })
+    );
+    fetchSpy.mockRestore();
   });
 });
 
@@ -81,8 +103,9 @@ describe("whatsappApi", () => {
 });
 
 describe("reportsApi", () => {
-  it("has weeklySales and topProducts", () => {
+  it("has weeklySales, salesInRange and topProducts", () => {
     expect(typeof reportsApi.weeklySales).toBe("function");
+    expect(typeof reportsApi.salesInRange).toBe("function");
     expect(typeof reportsApi.topProducts).toBe("function");
   });
 });

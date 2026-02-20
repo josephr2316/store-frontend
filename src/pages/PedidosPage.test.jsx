@@ -5,7 +5,11 @@ import PedidosPage from "./PedidosPage";
 const mockStore = {
   orders: [],
   loading: { orders: false },
-  fetchOrders: () => {},
+  error: null,
+  setError: () => {},
+  fetchOrders: () => Promise.resolve({ content: [], totalPages: 0, number: 0 }),
+  fetchOrderById: () => Promise.resolve(null),
+  fetchPendingCount: () => Promise.resolve(),
   createOrder: () => Promise.resolve({}),
   transitionOrder: () => Promise.resolve(),
   updateOrderAddress: () => Promise.resolve(),

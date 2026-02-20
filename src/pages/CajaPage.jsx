@@ -149,17 +149,30 @@ function InventoryTable({ products, balances, onAdjust, onRefresh, refreshing })
 }
 
 // ─── ADJUST MODAL ─────────────────────────────────────────────────────────────
+// Razones aceptadas por el backend (enum AdjustmentReason)
+const ADJUSTMENT_REASONS = [
+  { value: "COUNT_CORRECTION", label: "Conteo / corrección" },
+  { value: "DAMAGED", label: "Dañado / rotura" },
+  { value: "RETURN", label: "Devolución" },
+  { value: "MANUAL_SALE", label: "Venta manual" },
+  { value: "OTHER", label: "Otro" },
+];
 
 function AdjustModal({ target, onClose, onSave }) {
   const [quantity, setQuantity] = useState(0);
-  const [reason,   setReason]   = useState("");
-  const [saving,   setSaving]   = useState(false);
+  const [reason, setReason] = useState(ADJUSTMENT_REASONS[0].value);
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!quantity || !reason.trim()) return;
+    if (!quantity) return;
     setSaving(true);
-    try { await onSave(target.variantId, quantity, reason); onClose(); }
-    finally { setSaving(false); }
+    try {
+      await onSave(target.variantId, quantity, reason, note.trim() || undefined);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -170,14 +183,34 @@ function AdjustModal({ target, onClose, onSave }) {
       <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginBottom: 5, textTransform: "uppercase" }}>
         Cantidad
       </label>
-      <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))}
+      <input
+        type="number"
+        value={quantity}
+        onChange={e => setQuantity(Number(e.target.value))}
         placeholder="Ej: -3 o +10"
-        style={{ width: "100%", border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "9px 12px", fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 16 }} />
-      <Input label="Razón" value={reason} onChange={e => setReason(e.target.value)}
-        placeholder="Ej: conteo físico, rotura, devolución..." />
-      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        style={{ width: "100%", border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "9px 12px", fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 16 }}
+      />
+      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginBottom: 5, textTransform: "uppercase" }}>
+        Razón
+      </label>
+      <select
+        value={reason}
+        onChange={e => setReason(e.target.value)}
+        style={{ width: "100%", border: "1.5px solid #E5E7EB", borderRadius: 8, padding: "9px 12px", fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 16 }}
+      >
+        {ADJUSTMENT_REASONS.map(r => (
+          <option key={r.value} value={r.value}>{r.label}</option>
+        ))}
+      </select>
+      <Input
+        label="Notas (opcional)"
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        placeholder="Ej: conteo físico del 15/02, lote X..."
+      />
+      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
         <Btn variant="secondary" onClick={onClose}>Cancelar</Btn>
-        <Btn onClick={handleSave} disabled={!quantity || !reason.trim() || saving}>
+        <Btn onClick={handleSave} disabled={!quantity || saving}>
           {saving ? "Guardando..." : "Aplicar Ajuste"}
         </Btn>
       </div>
@@ -312,10 +345,10 @@ export default function CajaPage({ store, toast }) {
     refreshInventory();
   }, []);
 
-  const handleAdjust = async (variantId, quantity, reason) => {
+  const handleAdjust = async (variantId, quantityDelta, reason, note) => {
     try {
-      await adjustStock(variantId, quantity, reason);
-      toast(`✅ Stock ajustado (${quantity > 0 ? "+" : ""}${quantity})`);
+      await adjustStock(variantId, quantityDelta, reason, note);
+      toast(`✅ Stock ajustado (${quantityDelta > 0 ? "+" : ""}${quantityDelta})`);
     } catch (e) { toast(`❌ ${e.message}`); throw e; }
   };
 
@@ -323,7 +356,7 @@ export default function CajaPage({ store, toast }) {
     try {
       // Direct sale = negative adjustments for each item
       await Promise.all(
-        items.map(i => inventoryApi.adjust({ variantId: i.variantId, quantity: -i.quantity, reason: "Venta directa caja" }))
+        items.map(i => inventoryApi.adjust({ variantId: i.variantId, quantityDelta: -i.quantity, reason: "MANUAL_SALE" }))
       );
       const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
       toast(`✅ Venta registrada: ${fmtCurrency(total)}`);
