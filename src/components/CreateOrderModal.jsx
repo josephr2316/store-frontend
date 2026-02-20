@@ -59,9 +59,16 @@ export default function CreateOrderModal({ store, onClose, toast, onCreated }) {
     setSubmitting(true);
     try {
       const body = {
-        client:  { name: clientName, phone: clientPhone, address: clientAddress },
-        channel, notes,
-        items: items.map(i => ({ variantId: i.variantId, quantity: i.quantity })),
+        customerName: clientName,
+        customerPhone: clientPhone,
+        shippingAddress: clientAddress || undefined,
+        channel,
+        notes: notes || undefined,
+        items: items.map(i => ({
+          variantId: i.variantId,
+          quantity: i.quantity,
+          unitPrice: Number(i.price),
+        })),
       };
       const order = await createOrder(body);
       toast("✅ Pedido creado");
